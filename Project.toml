@@ -1,0 +1,4 @@
+name = "Polytropes"
+uuid = "bbcd0084-d8f5-438f-9872-cc447aef9e5f"
+authors = ["Kamillo Ferry <kafe@kafe.dev>"]
+version = "0.1.0"
