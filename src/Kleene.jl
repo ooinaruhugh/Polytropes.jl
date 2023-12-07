@@ -29,10 +29,8 @@ function kleene_polynomials(G::Graph{Directed})
         end
     end
 
-    ctx = MPolyBuildCtx(edge_ring(G))
-    return map(x -> (x .|> (term -> push_term!(ctx, 1, term)), finish(ctx)) |> last,
-        polynomials |> values)
-        
+    R = edge_ring(G)
+    return polynomials |> values .|> (x -> R(ones(Int, length(x)), x))
 end
 
 function product_of_kleene_polynomials(G::Graph{Directed})
