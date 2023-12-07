@@ -2,6 +2,7 @@ using Oscar
 import Oscar: toric_ideal, Graph, Undirected
 # import Graphs: vertices, Edge
 import Base: Vector
+using Bijections
 
 @doc raw"""
     complete_dag(n::Int64)
@@ -60,7 +61,7 @@ Dict{Edge, Int64} with 3 entries:
 function indices(G::Graph{Directed})
     E = sort(edges(G), by=x->x.target)
 
-    return Dict(zip(E, 1:length(E)))
+    return Bijection(Dict(zip(E, 1:length(E))))
 end
 
 @doc raw"""
@@ -139,24 +140,25 @@ ideal(e12*e24 - e14, e13*e34 - e14, e23*e34 - e24)
 function toric_ideal(G::Graph{Directed})
     R = edge_ring(G)
     A = design_matrix(G)
-    kerϕ = transpose(kernel(A)[2])
+    # kerϕ = transpose(kernel(A)[2])
+    MB = markov_basis(A)
 
     # return toric_ideal(R, transpose(A))
-    return binomial_exponents_to_ideal(R, kerϕ)
+    return binomial_exponents_to_ideal(R, MB)
 end
 
 function parse_gfan_output(s::String)
     unnecessary_stuff = ['{', '}', '\n', ',', ' ']
 
-    s = split(s, "{{")[2]
-    s = strip(s, unnecessary_stuff)
-
-    bases = split(s, "}\n")
-    bases = map(x -> strip(x, unnecessary_stuff), bases)
-
-    cleaned_bases = map(x -> split(x, ","), bases)
+    cleaned_bases = s |>
+        (x -> split(x, "{{")[2]) |> 
+        (x -> strip(x, unnecessary_stuff)) |> 
+        (x -> split(x, "}\n")) .|>
+        (x -> strip(x, unnecessary_stuff)) .|>
+        (x -> split(x, ","))
+        
     output = map(x -> map(y -> strip(y), x), cleaned_bases)
-    initial_terms = map(y -> map(x -> first(split(x, ['+', '-'])), y), output)
+    initial_terms = map(y -> map(x -> split(x, ['+', '-'])|>first, y), output)
 
     return output, initial_terms
 end
