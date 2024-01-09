@@ -12,11 +12,8 @@ Returns the complete acyclic directed graph on $n$ nodes.
 # Examples
 ```jldoctest
 julia> complete_dag(3)
-Graph{Directed}(pm::graph::Graph<pm::graph::Directed>
-{1 2}
-{2}
-{}
-)
+Directed graph with 3 nodes and the following edges:
+(1, 2)(1, 3)(2, 3)
 ```
 """
 function complete_dag(n)
@@ -146,43 +143,43 @@ function toric_ideal(G::Graph{Directed})
     return binomial_exponents_to_ideal(R, MB)
 end
 
-function parse_gfan_output(s::String)
-    unnecessary_stuff = ['{', '}', '\n', ',', ' ']
+# function parse_gfan_output(s::String)
+#     unnecessary_stuff = ['{', '}', '\n', ',', ' ']
 
-    cleaned_bases = s |>
-        (x -> split(x, "{{")[2]) |> 
-        (x -> strip(x, unnecessary_stuff)) |> 
-        (x -> split(x, "}\n")) .|>
-        (x -> strip(x, unnecessary_stuff)) .|>
-        (x -> split(x, ","))
+#     cleaned_bases = s |>
+#         (x -> split(x, "{{")[2]) |> 
+#         (x -> strip(x, unnecessary_stuff)) |> 
+#         (x -> split(x, "}\n")) .|>
+#         (x -> strip(x, unnecessary_stuff)) .|>
+#         (x -> split(x, ","))
         
-    output = map(x -> map(y -> strip(y), x), cleaned_bases)
-    initial_terms = map(y -> map(x -> split(x, ['+', '-'])|>first, y), output)
+#     output = map(x -> map(y -> strip(y), x), cleaned_bases)
+#     initial_terms = map(y -> map(x -> split(x, ['+', '-'])|>first, y), output)
 
-    return output, initial_terms
-end
+#     return output, initial_terms
+# end
 
-function construct_poly(B::Vector{String})
-    return map(f -> eval(Meta.parse(f)), B)
-end
+# function construct_poly(B::Vector{String})
+#     return map(f -> eval(Meta.parse(f)), B)
+# end
 
-function construct_poly(B::Vector{SubString{String}})
-    return construct_poly(String.(B))
-end
+# function construct_poly(B::Vector{SubString{String}})
+#     return construct_poly(String.(B))
+# end
 
-function gfan(I::Ideal)
-    basis = gens(I)
-    vars = gens(base_ring(I))
+# function gfan(I::Ideal)
+#     basis = gens(I)
+#     vars = gens(base_ring(I))
 
-    input = "Q[" * join(vars, ",") * "]{" * join(basis, ",") * "}"
+#     input = "Q[" * join(vars, ",") * "]{" * join(basis, ",") * "}"
 
-    # println(input)
+#     # println(input)
 
-    output = read(pipeline(`gfan_bases`, stdin=IOBuffer(input)), String)
-    parsed, parsed_initials = parse_gfan_output(output)
-    # bases = construct_poly.(parsed)
-    # initials = construct_poly.(parsed_initials)
+#     output = read(pipeline(`gfan_bases`, stdin=IOBuffer(input)), String)
+#     parsed, parsed_initials = parse_gfan_output(output)
+#     # bases = construct_poly.(parsed)
+#     # initials = construct_poly.(parsed_initials)
 
-    return parsed, parsed_initials
-    # return bases, initials
-end
+#     return parsed, parsed_initials
+#     # return bases, initials
+# end
