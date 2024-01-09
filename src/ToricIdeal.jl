@@ -1,5 +1,5 @@
 using Oscar
-import Oscar: toric_ideal, Graph, Undirected
+import Oscar: toric_ideal, Graph, Undirected, Directed
 # import Graphs: vertices, Edge
 import Base: Vector
 using Bijections
@@ -51,15 +51,15 @@ in the edge ring and the design matrix.
 
 # Examples
 ```jldoctest
-julia> indices(complete_dag(3))
-Dict{Edge, Int64} with 3 entries:
+julia> complete_dag(3) |> indices
+Bijection Dict{Edge, Int64} with 3 entries:
   Edge(1, 2) => 1
   Edge(1, 3) => 2
   Edge(2, 3) => 3
 ```
 """
 function indices(G::Graph{Directed})
-    E = sort(edges(G), by=x->x.target)
+    E = sort(edges(G) |> collect; by=x->x.target)
 
     return Bijection(Dict(zip(E, 1:length(E))))
 end
@@ -71,19 +71,20 @@ Returns for a given graph `G` the polynomial ring in variables $e_ij$ for every 
 
 # Examples
 ```jldoctest
-julia> edge_ring(complete_dag(3))
+julia> complete_dag(3) |> edge_ring
 Multivariate polynomial ring in 3 variables e12, e13, e23
   over rational field
 
-julia> edge_ring(complete_dag(4))
+julia> complete_dag(4) |> edge_ring
 Multivariate polynomial ring in 6 variables e12, e13, e23, e14..., e34
   over rational field
 ```
 """
 function edge_ring(G::Graph{Directed})
-    E = sort(edges(G), by=x->x.target)
+    E = sort(edges(G) |> collect, by=x->x.target)
     vars = map(e->"e$(e.source)$(e.target)", E)
 
+    #TODO: Change to return also vars
     return first(polynomial_ring(QQ, vars))
 end
 
@@ -95,12 +96,12 @@ associated to the all-pairs shortest-paths problem on $G$.
 
 # Examples
 ```jldoctest
-julia> design_matrix(complete_dag(3))
+julia> complete_dag(3) |> design_matrix
 [ 1    1    0]
 [-1    0    1]
 [ 0   -1   -1]
 
-julia> design_matrix(complete_dag(4))
+julia> complete_dag(4) |> design_matrix
 [ 1    1    0    1    0    0]
 [-1    0    1    0    1    0]
 [ 0   -1   -1    0    0    1]
@@ -108,6 +109,7 @@ julia> design_matrix(complete_dag(4))
 ```
 """
 function design_matrix(G::Graph{Directed})
+    #TODO: I think this is called a presentation matrix (cf. semigroup presentations)
     I = indices(G)
     A = zero_matrix(ZZ, nv(G), length(I))
 
@@ -130,20 +132,17 @@ Returns for a given graph `G` the toric ideal of the design matrix in the edge r
 
 # Examples
 ```jldoctest
-julia> toric_ideal(complete_dag(3))
+julia> complete_dag(3) |> toric_ideal
 ideal(e12*e23 - e13)
 
-julia> toric_ideal(complete_dag(4))
+julia> complete_dag(4) |> toric_ideal
 ideal(e12*e24 - e14, e13*e34 - e14, e23*e34 - e24)
 ```
 """
 function toric_ideal(G::Graph{Directed})
     R = edge_ring(G)
-    A = design_matrix(G)
-    # kerϕ = transpose(kernel(A)[2])
-    MB = markov_basis(A)
+    MB = design_matrix(G) |> markov_basis
 
-    # return toric_ideal(R, transpose(A))
     return binomial_exponents_to_ideal(R, MB)
 end
 
