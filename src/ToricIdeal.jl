@@ -1,8 +1,9 @@
 using Oscar
+using Bijections
+
+import Base: Vector
 import Oscar: toric_ideal, Graph, Undirected, Directed
 # import Graphs: vertices, Edge
-import Base: Vector
-using Bijections
 
 @doc raw"""
     complete_dag(n::Int64)
@@ -61,6 +62,11 @@ function indices(G::Graph{Directed})
     return Bijection(Dict(zip(E, 1:length(E))))
 end
 
+function variables(G::Graph{Directed})
+    E = sort(edges(G) |> collect, by=x->x.target)
+    return map(e->"e$(e.source)$(e.target)", E)
+end
+
 @doc raw"""
     edge_ring((G::Graph{Directed})
 
@@ -78,11 +84,14 @@ Multivariate polynomial ring in 6 variables e12, e13, e23, e14..., e34
 ```
 """
 function edge_ring(G::Graph{Directed})
-    E = sort(edges(G) |> collect, by=x->x.target)
-    vars = map(e->"e$(e.source)$(e.target)", E)
-
     #TODO: Change to return also vars
-    return first(polynomial_ring(QQ, vars))
+    return first(polynomial_ring(QQ, variables(G)))
+end
+
+
+function tropical_edge_ring(G::Graph{Directed}; minmax=min)
+    #TODO: Change to return also vars
+    return first(polynomial_ring(tropical_semiring(minmax), variables(G)))
 end
 
 @doc raw"""
