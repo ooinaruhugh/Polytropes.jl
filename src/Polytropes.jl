@@ -5,6 +5,8 @@ import Oscar
 include("Graphs.jl")
 include("markov_basis.jl")
 include("ToricIdeal.jl")
+include("Kleene.jl")
+include("weighted_digraph_polyhedron.jl")
 
 export complete_dag
 export edge_ring

@@ -17,7 +17,7 @@ Multivariate polynomial ring in 3 variables e12, e13, e23
   over rational field
 
 julia> complete_dag(4) |> edge_ring
-Multivariate polynomial ring in 6 variables e12, e13, e14, e23, ..., e34
+Multivariate polynomial ring in 6 variables e12, e13, e23, e14, ..., e34
   over rational field
 ```
 """
@@ -25,7 +25,6 @@ function edge_ring(G::Graph{Directed})
     #TODO: Change to return also vars
     return first(polynomial_ring(QQ, variables(G)))
 end
-
 
 function tropical_edge_ring(G::Graph{Directed}; minmax=min)
     #TODO: Change to return also vars
