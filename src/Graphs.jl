@@ -54,14 +54,18 @@ Bijection Dict{Edge, Int64} with 3 entries:
 ```
 """
 function indices(G::Graph{Directed})
-    # E = sort(edges(G) |> collect; by=x->x.target)
-    E = edges(G)
+    E = edges_by_target(G)
+    # E = edges(G)
 
     return Bijection(Dict(zip(E, 1:length(E))))
 end
 
 function variables(G::Graph{Directed})
-    # E = sort(edges(G) |> collect, by=x->x.target)
-    E = edges(G)
+    E = edges_by_target(G)
+    # E = edges(G)
     return map(e->"e$(e.source)$(e.target)", E)
+end
+
+function edges_by_target(G::Graph{Directed})
+    return sort(edges(G) |> collect; by=x->x.target)
 end
