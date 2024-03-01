@@ -1,15 +1,23 @@
 using Oscar
+# using MetaGraphs
 
-function kleene_polynomials(T::Type{<:Vector}, G::Graph{Directed}) # for acyclic graphs
+function unit_vector(T::Type, N, i)
+    v = zeros(T, N)
+    v[i] = 1
+    return v
+end
+
+# function kleene_polynomials(::Type{<:Vector}, G::Graph{Directed}) # for acyclic graphs
+function kleene_polynomials(::Type{<:MPolyRing}, G::Graph{Directed}) # for acyclic graphs
     I = indices(G)
     N = length(I)
     polynomials = Dict{Edge,Vector{Vector{Int}}}() # Save them as exponent vectors first, this is more economic for calculations
+    transitive_edges = []
 
     for level in 1:nv(G)
-        for j in 1:level-1
-            # Translate edge into (exponent vector of) monomial
-            c_ij = [zeros(Int, N)]
-            c_ij[1][I[Edge(j,level)]] = 1 # this is just the variable `e_ij`
+        for j in 1:level
+            c_ij = []
+            has_edge(G, j, level) && push!(c_ij, unit_vector(Int, N, I[Edge(j,level)]))
             
             for k in inneighbors(G, level) # costruct summands of ij-th polynomial as product of ik-th edge times kj-th polynomial
                 c_ik = get(polynomials, Edge(j,k), []) 
@@ -28,17 +36,45 @@ function kleene_polynomials(T::Type{<:Vector}, G::Graph{Directed}) # for acyclic
             end
 
             setindex!(polynomials, c_ij, Edge(j,level))
+            !isempty(c_ij) && push!(transitive_edges, Edge(j,level))
         end
     end
 
     R = edge_ring(G)
-    return get.(Ref(polynomials), edges_by_target(G), missing)
+    return get.(Ref(polynomials), transitive_edges, missing) .|> (x -> R(ones(Int, length(x)), x))
+    # return get.(Ref(polynomials), edges_by_target(G), missing)
 end
 
-kleene_polynomials(T::Type{<:MPolyRing}, G::Graph{Directed}) = kleene_polynomials(Vector, G) .|> (x -> edge_ring(G)(ones(Int, length(x)), x))
+
+# kleene_polynomials(::Type{<:MPolyRing}, G::Graph{Directed}) = kleene_polynomials(Vector, G) .|> (x -> edge_ring(G)(ones(Int, length(x)), x))
+# We need to convert from exponent vectors to polynomials and then back so the ordering stays stable
+kleene_polynomials(::Type{<:Vector}, G::Graph{Directed}) = kleene_polynomials(G) .|> exponents .|> collect
 kleene_polynomials(G::Graph{Directed}) = kleene_polynomials(MPolyRing, G)
+
+function kleene_graph(G::Graph{Directed})
+    N = nedges(G)
+
+    F = kleene_polynomials(Vector, G)
+    V = reduce(vcat, F)
+
+    # Find the index of the first and last edge in every path. The variables are sorted nicely in acyclic graphs, so they're just the first and last non-zero exponent.
+    k = V .|> y->[findfirst(x->x==1, y), findlast(x->x==1, y)]
+    factored_paths::Vector{Vector{Vector{Int}}} = [
+        [x - unit_vector(Int, N, k[i] |> first), x - unit_vector(Int, N, k[i] |> last)]
+        for (i,x) in enumerate(V)
+    ]
+
+    # `factored_paths` is a Vector of pairs of Vector{Int}, so we apply `findfirst` to both components z of every pair x
+    EK = factored_paths .|> x->(x.|> z -> findfirst(y->y==z,V))
+
+    K = Graph{Directed}(length(V))
+    for (i,x) in enumerate(EK)
+        first(x) |> isnothing || add_edge!(K, i, first(x))
+        last(x) |> isnothing || add_edge!(K,i,last(x))
+    end
+    return K #, V, EK, k, factored_paths
 end
 
 function product_of_kleene_polynomials(G::Graph{Directed})
-    return [filter(!ismonomial, kleene_polynomials(G)) |> prod]
+    return filter(!ismonomial, kleene_polynomials(G)) |> prod
 end
