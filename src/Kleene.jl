@@ -7,7 +7,6 @@ function unit_vector(T::Type, N, i)
     return v
 end
 
-# function kleene_polynomials(::Type{<:Vector}, G::Graph{Directed}) # for acyclic graphs
 function kleene_polynomials(::Type{<:MPolyRing}, G::Graph{Directed}) # for acyclic graphs
     I = indices(G)
     N = length(I)
@@ -32,7 +31,7 @@ function kleene_polynomials(::Type{<:MPolyRing}, G::Graph{Directed}) # for acycl
                 e_k = get(I, Edge(j,level), 0)
                 
                 tmp = [[i!=e_k ? a : 1 for (i,a) in enumerate(m)] for m in c_kj]
-                isempty(c_kj) || append(c_kj,tmp)
+                isempty(c_kj) || append!(c_kj,tmp)
             end
 
             setindex!(polynomials, c_ij, Edge(j,level))
@@ -42,11 +41,9 @@ function kleene_polynomials(::Type{<:MPolyRing}, G::Graph{Directed}) # for acycl
 
     R = edge_ring(G)
     return get.(Ref(polynomials), transitive_edges, missing) .|> (x -> R(ones(Int, length(x)), x))
-    # return get.(Ref(polynomials), edges_by_target(G), missing)
 end
 
 
-# kleene_polynomials(::Type{<:MPolyRing}, G::Graph{Directed}) = kleene_polynomials(Vector, G) .|> (x -> edge_ring(G)(ones(Int, length(x)), x))
 # We need to convert from exponent vectors to polynomials and then back so the ordering stays stable
 kleene_polynomials(::Type{<:Vector}, G::Graph{Directed}) = kleene_polynomials(G) .|> exponents .|> collect
 kleene_polynomials(G::Graph{Directed}) = kleene_polynomials(MPolyRing, G)
