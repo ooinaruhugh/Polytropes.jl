@@ -18,4 +18,6 @@ export weighted_digraph_polyhedron
 export kleene_polynomials
 export product_of_kleene_polynomials
 
+export kleene_graph
+
 end # module Polytropes
