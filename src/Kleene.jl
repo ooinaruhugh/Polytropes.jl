@@ -1,4 +1,5 @@
 using Oscar
+# import Graphs: DiGraph, transitiveclosure, add_edge!, nv
 # using MetaGraphs
 
 function unit_vector(T::Type, N, i)
@@ -43,7 +44,6 @@ function kleene_polynomials(::Type{<:MPolyRing}, G::Graph{Directed}) # for acycl
     return get.(Ref(polynomials), transitive_edges, missing) .|> (x -> R(ones(Int, length(x)), x))
 end
 
-
 # We need to convert from exponent vectors to polynomials and then back so the ordering stays stable
 kleene_polynomials(::Type{<:Vector}, G::Graph{Directed}) = kleene_polynomials(G) .|> exponents .|> collect
 kleene_polynomials(G::Graph{Directed}) = kleene_polynomials(MPolyRing, G)
@@ -53,6 +53,7 @@ function kleene_graph(G::Graph{Directed})
 
     F = kleene_polynomials(Vector, G)
     V = reduce(vcat, F)
+    groups = sort(F;lt=!isless,by=length) .|> (f -> [findfirst(x->x==m,V) for m in f])
 
     # Find the index of the first and last edge in every path. The variables are sorted nicely in acyclic graphs, so they're just the first and last non-zero exponent.
     k = V .|> y->[findfirst(x->x==1, y), findlast(x->x==1, y)]
@@ -61,7 +62,7 @@ function kleene_graph(G::Graph{Directed})
         for (i,x) in enumerate(V)
     ]
 
-    # `factored_paths` is a Vector of pairs of Vector{Int}, so we apply `findfirst` to both components z of every pair x
+    # `factored_paths` is a Vector of pairs of monomials/exponent vectors, so we apply `findfirst` to both components z of every pair x
     EK = factored_paths .|> x->(x.|> z -> findfirst(y->y==z,V))
 
     K = Graph{Directed}(length(V))
@@ -69,7 +70,49 @@ function kleene_graph(G::Graph{Directed})
         first(x) |> isnothing || add_edge!(K, i, first(x))
         last(x) |> isnothing || add_edge!(K,i,last(x))
     end
-    return K #, V, EK, k, factored_paths
+    return K, groups
+end
+
+function build_reverse_lookup(F::Vector{Vector{Int}})
+    lookup = Dict{Int, Vector{Int}}()
+    for f in F
+        for m in f
+            lookup[m] = f
+        end
+    end
+
+    return lookup
+end
+
+function enumerate_satisfying_assignments(K::Graph{Directed}, F::Vector{Vector{Int}}, lookup::Dict)
+    f = first(F)
+    solutions = []
+
+    for m in f
+        solution = [m, neighbors(K,m)...]
+
+        assigned = [get(lookup, x, nothing) for x in solution]
+        unassigned = filter(x->x ∉ assigned, F)
+
+        if unassigned |> !is_empty
+            subsolutions = enumerate_satisfying_assignments(K, unassigned, lookup)
+
+            for subsolution in subsolutions
+                push!(solutions, union(solution, subsolution))
+            end
+        else
+            push!(solutions, solution)
+        end
+    end
+    
+    return solutions
+end
+
+function enumerate_satisfying_assignments(K::Graph{Directed}, F::Vector{Vector{Int}})
+    lookup = build_reverse_lookup(F)
+    KT = transitive_closure(K)
+
+    return enumerate_satisfying_assignments(KT, F, lookup)    
 end
 
 function product_of_kleene_polynomials(G::Graph{Directed})
