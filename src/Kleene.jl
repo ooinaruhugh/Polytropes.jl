@@ -48,8 +48,10 @@ end
 kleene_polynomials(::Type{<:Vector}, G::Graph{Directed}) = kleene_polynomials(G) .|> exponents .|> collect
 kleene_polynomials(G::Graph{Directed}) = kleene_polynomials(MPolyRing, G)
 
+monomials_of_kleene_polynomials(G::Graph{Directed}) = reduce(vcat, kleene_polynomials(G) .|> monomials .|> collect)
+
 function kleene_graph(G::Graph{Directed})
-    N = nedges(G)
+    N = n_edges(G)
 
     F = kleene_polynomials(Vector, G)
     V = reduce(vcat, F)
