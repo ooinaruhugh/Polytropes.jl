@@ -1,22 +1,22 @@
 module Transitivity
 
 using Graphs
-const Graphs_jl = Graphs
+const _Graphs = Graphs
 using Oscar
 
 function to_graphs_graph(G::Oscar.Graph{Directed})
-    out = DiGraph(nvertices(G))
+    out = DiGraph(n_vertices(G))
     for e in Oscar.edges(G)
-        Graphs_jl.add_edge!(out, Oscar.src(e), Oscar.dst(e))
+        _Graphs.add_edge!(out, Oscar.src(e), Oscar.dst(e))
     end
     
     return out
 end
 
 function to_oscar_graph(G::DiGraph)
-    out = Oscar.Graph{Directed}(Graphs_jl.nv(G))
-    for e in Graphs_jl.edges(G)
-        Oscar.add_edge!(out, Graphs_jl.src(e), Graphs_jl.dst(e))
+    out = Oscar.Graph{Directed}(_Graphs.nv(G))
+    for e in _Graphs.edges(G)
+        Oscar.add_edge!(out, _Graphs.src(e), _Graphs.dst(e))
     end
     
     return out
