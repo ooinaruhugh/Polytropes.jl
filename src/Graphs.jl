@@ -69,3 +69,10 @@ end
 function edges_by_target(G::Graph{Directed})
     return sort(edges(G) |> collect; by=x->x.target)
 end
+
+function opposite_graph(K::Graph{Directed})
+    return graph_from_edges(Directed, [[dst(e), src(e)] for e in edges(K)], n_vertices(K))
+end
+
+indegree(G::Graph{Directed}, v::Int) = inneighbors(G, v) |> length
+outdegree(G::Graph{Directed}, v::Int) = outneighbors(G, v) |> length
