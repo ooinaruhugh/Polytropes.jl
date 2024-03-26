@@ -16,6 +16,9 @@ export opposite_graph
 export indegree
 export outdegree
 
+export edges_by_target
+export edges_for_variables
+
 export edge_ring
 export design_matrix
 export toric_ideal
@@ -28,6 +31,8 @@ export monomials_of_kleene_polynomials
 
 export kleene_graph
 export enumerate_satisfying_assignments
+
+export edge_ring_inclusion
 
 export transitive_closure
 export transitive_reduction

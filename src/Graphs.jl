@@ -1,7 +1,6 @@
 using Oscar
 import Oscar: Graph, Undirected, Directed
 
-
 @doc raw"""
     complete_dag(n::Int64)
 
@@ -60,7 +59,7 @@ function indices(G::Graph{Directed})
     return Bijection(Dict(zip(E, 1:length(E))))
 end
 
-function variables(G::Graph{Directed})
+function variable_labels(G::Graph{Directed})
     E = edges_by_target(G)
     # E = edges(G)
     return map(e->"e$(e.source)$(e.target)", E)
@@ -68,6 +67,10 @@ end
 
 function edges_by_target(G::Graph{Directed})
     return sort(edges(G) |> collect; by=x->x.target)
+end
+
+function edge_of_gen(G::Graph{Directed}, x::QQMPolyRingElem)
+    return edges_by_target(G)[findfirst(y->y==x, edge_ring((G)) |> gens)]
 end
 
 function opposite_graph(K::Graph{Directed})
