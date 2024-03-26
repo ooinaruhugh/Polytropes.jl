@@ -23,12 +23,24 @@ Multivariate polynomial ring in 6 variables e12, e13, e23, e14, ..., e34
 """
 function edge_ring(G::Graph{Directed})
     #TODO: Change to return also vars
-    return first(polynomial_ring(QQ, variables(G)))
+    return first(polynomial_ring(QQ, variable_labels(G)))
+end
+
+function edge_ring_inclusion(G::Graph{Directed}, H::Graph{Directed})
+    R, P = edge_ring.([G,H])
+
+    im = gens(R)[edges_by_target(H) .|>  (e->findfirst(x->e==x, edges_by_target(G)))]
+
+    return hom(P, R, im)
 end
 
 function tropical_edge_ring(G::Graph{Directed}; minmax=min)
     #TODO: Change to return also vars
-    return first(polynomial_ring(tropical_semiring(minmax), variables(G)))
+    return first(polynomial_ring(tropical_semiring(minmax), variable_labels(G)))
+end
+
+function edges_for_variables(G::Graph{Directed})
+    return Dict(zip(gens(edge_ring(G)), edges_by_target(G)))
 end
 
 @doc raw"""

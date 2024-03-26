@@ -86,9 +86,9 @@ function build_reverse_lookup(F::Vector{Vector{Int}})
     return lookup
 end
 
-function enumerate_satisfying_assignments(K::Graph{Directed}, F::Vector{Vector{Int}}, lookup::Dict)
+function _enumerate_satisfying_assignments(K::Graph{Directed}, F::Vector{Vector{Int}}, lookup::Dict)
     f = first(F)
-    solutions = []
+    assignments = []
 
     for m in f
         solution = [m, neighbors(K,m)...]
@@ -97,25 +97,71 @@ function enumerate_satisfying_assignments(K::Graph{Directed}, F::Vector{Vector{I
         unassigned = filter(x->x ∉ assigned, F)
 
         if unassigned |> !is_empty
-            subsolutions = enumerate_satisfying_assignments(K, unassigned, lookup)
+            subassignments = _enumerate_satisfying_assignments(K, unassigned, lookup)
 
-            for subsolution in subsolutions
-                push!(solutions, union(solution, subsolution))
+            for subassignment in subassignments
+                push!(assignments, union(solution, subassignment))
             end
         else
-            push!(solutions, solution)
+            push!(assignments, solution)
         end
     end
     
-    return solutions
+    return assignments
 end
 
-function enumerate_satisfying_assignments(K::Graph{Directed}, F::Vector{Vector{Int}})
+function _enumerate_satisfying_assignments(K::Graph{Directed}, F::Vector{Vector{Int}})
     lookup = build_reverse_lookup(F)
     KT = transitive_closure(K)
 
-    return enumerate_satisfying_assignments(KT, F, lookup)    
+    return _enumerate_satisfying_assignments(KT, F, lookup)
 end
+
+function essential_edges(G::Graph{Directed})
+    return transitive_reduction(G) |> edges |> collect
+end
+
+function _enumerate_satisfying_assignments(G::Graph{Directed})
+    n_edges(G) == 0 && return []
+
+    M = monomials_of_kleene_polynomials(G)
+    K, F = kleene_graph(G)
+    assignments = sort!.(_enumerate_satisfying_assignments(K,F)) .|> (x->M[x])
+
+    for e in essential_edges(G)
+        E = [vw for vw in edges(G) if vw != e]
+        if E |> !isempty
+            H = graph_from_edges(Directed, E, n_vertices(G))
+            i = edge_ring_inclusion(G, H)
+
+            push!(assignments, (_enumerate_satisfying_assignments(H) .|> x->i.(x))...)
+        end
+    end
+
+    return assignments
+    # return reduce(vcat, assignments)
+end
+
+function enumerate_satisfying_assignments(G::Graph{Directed})
+    return _enumerate_satisfying_assignments(G)
+end
+
+function action_on_kleene_graph(G::Graph{Directed}, f::PermGroupElem)
+    R = edge_ring(G)
+    E = edges_by_target(G)
+    M = monomials_of_kleene_polynomials(G)
+
+    im = [Edge(e |> src |> f, e |> dst |> f) for e in edges(G)] .|> 
+         e -> findfirst(y->y==e, edges_by_target(G)) .|>
+         i -> gens(R)[i]
+
+    phi = hom(R,R,im)
+
+end
+
+# function prune_satisfying_assignments(S::Vector{Vector{Int}}, )
+
+# end
 
 function product_of_kleene_polynomials(G::Graph{Directed})
     return filter(!ismonomial, kleene_polynomials(G)) |> prod
