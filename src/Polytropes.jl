@@ -7,6 +7,7 @@ include("markov_basis.jl")
 include("ToricIdeal.jl")
 include("Kleene.jl")
 include("weighted_digraph_polyhedron.jl")
+include("Cayley.jl")
 
 include("Transitivity.jl")
 import .Transitivity: transitive_closure, transitive_reduction
