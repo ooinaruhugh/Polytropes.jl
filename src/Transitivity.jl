@@ -6,9 +6,11 @@ using Oscar
 
 function to_graphs_graph(G::Oscar.Graph{Directed})
     out = DiGraph(n_vertices(G))
+GC.@preserve G begin
     for e in Oscar.edges(G)
         _Graphs.add_edge!(out, Oscar.src(e), Oscar.dst(e))
     end
+end
     
     return out
 end
