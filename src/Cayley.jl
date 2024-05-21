@@ -39,6 +39,18 @@ function minkowski_sum(A::AbstractVector{<:AbstractVector{T}}...) where {T}
     return vec([sum(v) for v in Iterators.product(A...)])
 end
 
+function mixed_subdivisions(G::Graph{Directed})
+  n = n_vertices(G)
+  f = x->[(x,1)]
+  
+  A = [
+       Vector.(sparse_row.(Ref(ZZ), f.([v,outneighbors(G,v)...])) ,n)
+    for v in 1:n
+  ]
+
+  return mixed_subdivisions(A...)
+end
+
 function mixed_subdivisions(A::AbstractVector{<:AbstractVector{T}}...) where {T}
     d = length(A |> first |> first)
     n = length(A)
@@ -75,12 +87,21 @@ function mixed_subdivisions(A::AbstractVector{<:AbstractVector{T}}...) where {T}
     return M, subdivisions
 end
 
-function mixed_subdivisions_as_complexes(A::AbstractVector{<:AbstractVector{T}}...) where {T}
-    M, subdivisions = mixed_subdivisions(A...)
+function polytrope_duals(G::Graph{Directed})
+  M,T = mixed_subdivisions(G)
 
-    return [polyhedral_complex(IncidenceMatrix(subdivision...), M) for subdivision in subdivisions]
-    # return [
-    #     polyhedral_complex(IncidenceMatrix(subdivision...), M).pm_complex |> Polymake.polytope.project_full |> polyhedral_complex
-    #     for subdivision in subdivisions
-    # ]
+  return mixed_subdivisions_as_complexes(M, unique(filter.(x->1∈x, t) for t in T))
 end
+
+mixed_subdivisions_as_complexes(M, subdivisions) = [
+  polyhedral_complex(IncidenceMatrix(subdivision...), M) 
+  for subdivision in subdivisions
+]
+
+mixed_subdivisions_as_complexes(
+  A::AbstractVector{<:AbstractVector{T}}...
+) where {T} = mixed_subdivisions_as_complexes(mixed_subdivisions(A...))
+# return [
+#     polyhedral_complex(IncidenceMatrix(subdivision...), M).pm_complex |> Polymake.polytope.project_full |> polyhedral_complex
+#     for subdivision in subdivisions
+# ]
