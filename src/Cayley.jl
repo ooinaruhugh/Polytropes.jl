@@ -67,7 +67,10 @@ function mixed_subdivisions(A::AbstractVector{<:AbstractVector{T}}...) where {T}
             
     M = minkowski_sum(A...)
     C = cayley_embedding(A...)
-    cayley_lookup = Dict(i => findfirst(x->x==1, c[d+1:d+n]) for (i,c) in enumerate(C))
+    cayley_lookup = Dict(
+        i => findfirst(x->x==1, c[d+1:d+n]) 
+        for (i,c) in enumerate(C)
+    )
 
     CP = convex_hull(C)
     Tri::Vector{Vector{Vector{Int}}} = CP.pm_polytope |> Polymake.polytope.project_full |> polyhedron |> all_triangulations
