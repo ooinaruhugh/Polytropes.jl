@@ -86,7 +86,7 @@ function build_reverse_lookup(F::Vector{Vector{Int}})
     return lookup
 end
 
-function _enumerate_satisfying_assignments(K::Graph{Directed}, F::Vector{Vector{Int}}, lookup::Dict)
+function satisfying_assignments(K::Graph{Directed}, F::Vector{Vector{Int}}, lookup::Dict)
     f = first(F)
     assignments = []
 
@@ -97,7 +97,7 @@ function _enumerate_satisfying_assignments(K::Graph{Directed}, F::Vector{Vector{
         unassigned = filter(x->x ∉ assigned, F)
 
         if unassigned |> !is_empty
-            subassignments = _enumerate_satisfying_assignments(K, unassigned, lookup)
+            subassignments = satisfying_assignments(K, unassigned, lookup)
 
             for subassignment in subassignments
                 push!(assignments, union(solution, subassignment))
@@ -110,23 +110,56 @@ function _enumerate_satisfying_assignments(K::Graph{Directed}, F::Vector{Vector{
     return assignments
 end
 
-function _enumerate_satisfying_assignments(K::Graph{Directed}, F::Vector{Vector{Int}})
+function satisfying_assignments(K::Graph{Directed}, F::Vector{Vector{Int}})
     lookup = build_reverse_lookup(F)
     KT = transitive_closure(K)
 
-    return _enumerate_satisfying_assignments(KT, F, lookup)
+    return satisfying_assignments(KT, F, lookup)
+end
+
+function satisfying_assignments(G::Graph{Directed})
+    K, F = kleene_graph(G)
+    S = satisfying_assignments(K, F)
+
+    A = action_by_automorphism_group(G)
+
+    orbits = [
+        [
+            sort!([a[i] for i in s]) for a in A
+        ] 
+        for s in S
+     ] .|> sort! |> unique
+
+     return orbits .|> first
 end
 
 function essential_edges(G::Graph{Directed})
-    return transitive_reduction(G) |> edges |> collect
+    Gt = transitive_reduction(G)
+
+    return GC.@preserve Gt (Gt |> edges |> collect)
 end
 
-function _enumerate_satisfying_assignments(G::Graph{Directed})
-    n_edges(G) == 0 && return []
+function _enumerate_satisfying_assignments(G::Graph{Directed}, seen::Dict{Int, <:Vector})
+    n_edges(G) == 0 && return QQMPolyRingElem[]
+    
+    graph_hash = Polymake.graph.canonical_hash(Oscar.pm_object(G))
+    if haskey(seen, graph_hash) 
+        for H in seen[graph_hash]
+            is_isomorphic = Polymake.graph.isomorphic(
+                Oscar.pm_object(G),
+                Oscar.pm_object(H)
+            )
 
+            is_isomorphic && return QQMPolyRingElem[] 
+        end
+
+        push!(seen[graph_hash], G)
+    else
+        seen[graph_hash] = [G]
+    end
+    
     M = monomials_of_kleene_polynomials(G)
-    K, F = kleene_graph(G)
-    assignments = sort!.(_enumerate_satisfying_assignments(K,F)) .|> (x->M[x])
+    assignments = sort!.(satisfying_assignments(G)) .|> (x->M[x])
 
     for e in essential_edges(G)
         E = [vw for vw in edges(G) if vw != e]
@@ -134,7 +167,7 @@ function _enumerate_satisfying_assignments(G::Graph{Directed})
             H = graph_from_edges(Directed, E, n_vertices(G))
             i = edge_ring_inclusion(G, H)
 
-            push!(assignments, (_enumerate_satisfying_assignments(H) .|> x->i.(x))...)
+            push!(assignments, (_enumerate_satisfying_assignments(H, seen) .|> x->i.(x))...)
         end
     end
 
@@ -143,25 +176,29 @@ function _enumerate_satisfying_assignments(G::Graph{Directed})
 end
 
 function enumerate_satisfying_assignments(G::Graph{Directed})
-    return _enumerate_satisfying_assignments(G)
+    return [QQMPolyRingElem[], _enumerate_satisfying_assignments(G, Dict{Int, Vector{Graph{Directed}}}())...]
 end
 
-function action_on_kleene_graph(G::Graph{Directed}, f::PermGroupElem)
+function action_by_automorphism_group(G::Graph{Directed})
     R = edge_ring(G)
     E = edges_by_target(G)
     M = monomials_of_kleene_polynomials(G)
+    actions = Dict[]
 
-    im = [Edge(e |> src |> f, e |> dst |> f) for e in edges(G)] .|> 
-         e -> findfirst(y->y==e, edges_by_target(G)) .|>
-         i -> gens(R)[i]
+    for a in automorphism_group(G)
+        im = [Edge(e |> src |> a, e |> dst |> a) for e in E] .|> 
+            e -> findfirst(y->y==e, E) .|>
+            i -> gens(R)[i]
 
-    phi = hom(R,R,im)
+        gens_aut = hom(R,R,im)
+        
+        aut_M = gens_aut.(M) .|> m -> findfirst(y->y==m, M) 
 
+        push!(actions, Dict(zip(1:length(M), aut_M)))
+    end
+
+    return actions
 end
-
-# function prune_satisfying_assignments(S::Vector{Vector{Int}}, )
-
-# end
 
 function product_of_kleene_polynomials(G::Graph{Directed})
     return filter(!ismonomial, kleene_polynomials(G)) |> prod
