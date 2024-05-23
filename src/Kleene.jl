@@ -201,5 +201,5 @@ function action_by_automorphism_group(G::Graph{Directed})
 end
 
 function product_of_kleene_polynomials(G::Graph{Directed})
-    return filter(!ismonomial, kleene_polynomials(G)) |> prod
+    return filter(!is_monomial, kleene_polynomials(G)) |> prod
 end
