@@ -1,6 +1,6 @@
 using Oscar
 
-function cayley_embedding_of_dual_vertices(G::Graph{Directed})
+function vertices_of_newton_polytope(G::Graph{Directed})
     C = Vector{Vector{Int}}[]
     n = n_vertices(G)
 
@@ -16,6 +16,11 @@ function cayley_embedding_of_dual_vertices(G::Graph{Directed})
         push!(C,Cv)
     end
 
+    return C
+end
+
+function cayley_embedding_of_dual_vertices(G::Graph{Directed})
+    C = vertices_of_newton_polytope(G)
     return cayley_embedding(C...)
 end
 
@@ -36,7 +41,7 @@ function cayley_embedding(A::AbstractVector{<:AbstractVector{T}}...) where {T}
 end
 
 function minkowski_sum(A::AbstractVector{<:AbstractVector{T}}...) where {T}
-    return vec([sum(v) for v in Iterators.product(A...)])
+    return vec(unique([sum(v) for v in Iterators.product(A...)]))
 end
 
 function mixed_subdivisions(G::Graph{Directed})
