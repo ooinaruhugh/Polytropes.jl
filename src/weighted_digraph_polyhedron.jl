@@ -1,4 +1,5 @@
 using Oscar
+import Oscar: ZZRingElem, RayVector, QQFieldElem
 
 Vector{ZZRingElem}(v::RayVector{QQFieldElem}) = ZZ.(convert(Vector, v))
 
