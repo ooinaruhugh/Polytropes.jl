@@ -183,7 +183,7 @@ function action_by_automorphism_group(G::Graph{Directed})
     R = edge_ring(G)
     E = edges_by_target(G)
     M = monomials_of_kleene_polynomials(G)
-    actions = Dict[]
+    orbits = Dict[]
 
     for a in automorphism_group(G)
         im = [Edge(e |> src |> a, e |> dst |> a) for e in E] .|> 
@@ -194,10 +194,10 @@ function action_by_automorphism_group(G::Graph{Directed})
         
         aut_M = gens_aut.(M) .|> m -> findfirst(y->y==m, M) 
 
-        push!(actions, Dict(zip(1:length(M), aut_M)))
+        push!(orbits, Dict(zip(1:length(M), aut_M)))
     end
 
-    return actions
+    return orbits
 end
 
 function product_of_kleene_polynomials(G::Graph{Directed})
