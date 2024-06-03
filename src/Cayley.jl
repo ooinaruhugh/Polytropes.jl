@@ -1,17 +1,14 @@
 using Oscar
 
 function vertices_of_newton_polytope(G::Graph{Directed})
-    C = Vector{Vector{Int}}[]
+    C = Vector{PointVector}[]
     n = n_vertices(G)
 
     for v in 1:n
-        Cv = Vector{Int}[]
-        for u in [v,outneighbors(G, v)...]
-            c = zeros(Int, n)
-            c[u] = 1
-
-            push!(Cv,c)
-        end
+        Cv = [
+            point_vector([i==u for i in  1:n])
+            for u in [v,outneighbors(G, v)...]
+        ]
 
         push!(C,Cv)
     end
@@ -24,41 +21,21 @@ function cayley_embedding_of_dual_vertices(G::Graph{Directed})
     return cayley_embedding(C...)
 end
 
-function cayley_embedding(A::AbstractVector{<:AbstractVector{T}}...) where {T}
-    C = Vector{Int}[]
-    d = length(A |> first |> first)
+function cayley_embedding(A::AbstractVector{<:PointVector}...)
     n = length(A)
-    for (i,a) in enumerate(A)
-        for p in a
-            c = [p...,zeros(T, n)...]
-            c[d+i] = 1
 
-            push!(C,c)
-        end
-    end
-
-    return C
+    return vcat(
+        [vcat.(a, Ref([x==i for x in 1:n]))
+         for (i,a) in enumerate(A)]...
+    )
 end
 
-function minkowski_sum(A::AbstractVector{<:AbstractVector{T}}...) where {T}
-    return vec(unique([sum(v) for v in Iterators.product(A...)]))
-end
-
-function mixed_subdivisions(G::Graph{Directed})
-  n = n_vertices(G)
-  f = x->[(x,1)]
-  
-  A = [
-       Vector.(sparse_row.(Ref(ZZ), f.([v,outneighbors(G,v)...])) ,n)
-    for v in 1:n
-  ]
-
-  return mixed_subdivisions(A...)
-end
-
-function mixed_subdivisions(A::AbstractVector{<:AbstractVector{T}}...) where {T}
-    d = length(A |> first |> first)
+function coherent_minkowski_indices(
+        A::AbstractVector{<:AbstractVector{<:PointVector}}, 
+        M::AbstractVector{<:PointVector}
+    )
     n = length(A)
+    d = length(M[1])
 
     _indices = [
         Ref(l).+(1:length(a)) 
@@ -66,45 +43,77 @@ function mixed_subdivisions(A::AbstractVector{<:AbstractVector{T}}...) where {T}
             [0,(sum(length.(A[1:i-1])) for i in 2:n)...]
         )
     ]
-    minkowski_lookup = Dict(
-        t => i for (i,t) in enumerate(Iterators.product(_indices...))
-    )
-            
+
+    C = vcat(A...)
+    lookup = Dict(
+                  t => findfirst(==(sum(C[collect(t)])), M)
+                  for t in Iterators.product(_indices...)
+                 )
+
+    return lookup
+end
+
+function minkowski_sum(A::AbstractVector{<:PointVector}...)
+    return vec([sum(v) for v in Iterators.product(A...)]) |> unique
+end
+
+function mixed_subdivisions(G::Graph{Directed})
+  A = vertices_of_newton_polytope(G)
+  return mixed_subdivisions(A...)
+end
+
+function mixed_subdivisions(::Type{IncidenceMatrix}, G::Graph{Directed})
+  A = vertices_of_newton_polytope(G)
+  return mixed_subdivisions(IncidenceMatrix, A...)
+end
+
+function mixed_subdivisions(A::AbstractVector{<:PointVector}...)
+    d = length(A |> first |> first)
+    n = length(A)
+
+    _indices = Dict(vcat(
+        [Ref(l).+(1:length(a)) .=> Ref(i)
+        for ((i,a),l) in Iterators.zip(enumerate(A),
+            [0,(sum(length.(A[1:i-1])) for i in 2:n)...]
+        )
+       ]...)...)
+
+    # Calculate which index belongs to which point set A_i
     M = minkowski_sum(A...)
+    minkowski_lookup = coherent_minkowski_indices(collect(A),M)
     C = cayley_embedding(A...)
-    cayley_lookup = Dict(
-        i => findfirst(x->x==1, c[d+1:d+n]) 
-        for (i,c) in enumerate(C)
-    )
 
     CP = convex_hull(C)
     Tri::Vector{Vector{Vector{Int}}} = CP.pm_polytope |> Polymake.polytope.project_full |> polyhedron |> all_triangulations
 
-    subdivisions = Vector{Vector{Vector{Int}}}[]
-    for t in Tri
-        subdivision = [
-            [
-                minkowski_lookup[I]
-                for I in vec(collect(Iterators.product((filter(x->cayley_lookup[x] == i, Δ) for i in 1:n)...)))
-            ] for Δ in t
-        ]
+    subdivisions = Vector{<:Vector}[]
+    for T in Tri
+      separated_T = [filter.([v->_indices[v]==i for i in 1:n], Ref(t)) for t in T]
 
-        push!(subdivisions,[subdivision])
+      push!(subdivisions, 
+            [
+             vec([minkowski_lookup[v] for v in Iterators.product(t...)]) for t in separated_T
+            ])
     end
 
     return M, subdivisions
 end
 
+function mixed_subdivisions(::Type{IncidenceMatrix}, A::AbstractVector{<:PointVector}...)
+    M, subdivisions = mixed_subdivisions(A...)
+    return M, IncidenceMatrix.(subdivisions)
+end
+
 function polytrope_duals(G::Graph{Directed})
   M,T = mixed_subdivisions(G)
 
-  return mixed_subdivisions_as_complexes(M, unique(filter.(x->1∈x, t) for t in T))
+  return mixed_subdivisions_as_complexes(M, IncidenceMatrix.([filter(x->1∈x, t) for t in T]))
 end
 
-mixed_subdivisions_as_complexes(M, subdivisions) = [
-  polyhedral_complex(IncidenceMatrix(subdivision...), M) 
-  for subdivision in subdivisions
-]
+function mixed_subdivisions_as_complexes(M, subdivisions) 
+  Mmat = reduce(hcat, M) |> transpose
+  return subdivision_of_points.(Ref(Mmat), subdivisions)
+end
 
 mixed_subdivisions_as_complexes(
   A::AbstractVector{<:AbstractVector{T}}...
