@@ -172,6 +172,7 @@ function mixed_subdivisions_as_complexes(M::AbstractVector{<:PointVector}, subdi
 
       return output
   else return complexes
+  end
   #return subdivision_of_points.(Ref(Mmat), subdivisions)
 end
 
