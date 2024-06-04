@@ -149,20 +149,32 @@ function mixed_subdivisions(::Type{IncidenceMatrix}, A::AbstractVector{<:PointVe
     return M, IncidenceMatrix.(subdivisions)
 end
 
-function polytrope_duals(G::Graph{Directed})
+function polytrope_duals(G::Graph{Directed}; project_full=false)
   M,T = mixed_subdivisions(G)
+  d = length(M[1])
   incidences = IncidenceMatrix.([filter(x->1∈x, t) for t in T])
   for I in incidences
       resize!(I, nrows(I), length(M))
   end
 
-  return mixed_subdivisions_as_complexes(M, incidences)
+  Mmat = matrix(QQ, reduce(hcat, M) |> transpose)
+  if project_full
+      π = sparse_matrix(QQ)
+      for i in 2:d
+          push!(π, sparse_row(QQ, [(i,QQ(1))]))
+      end
+      π = matrix(π) |> transpose
+
+      return polyhedral_complex.(incidences, Ref(Mmat*π))
+  else 
+      return polyhedral_complex.(incidences, Ref(Mmat))
+  end
 end
 
 function mixed_subdivisions_as_complexes(M::AbstractVector{<:PointVector}, subdivisions; project_full=true) 
   Mmat = reduce(hcat, M) |> transpose
 
-  complexes = polyhedral_complex.(subdivisions, Mmat)
+  complexes = polyhedral_complex.(subdivisions, Ref(Mmat))
   if project_full
       output = PolyhedralComplex[]
       for P in complexes
