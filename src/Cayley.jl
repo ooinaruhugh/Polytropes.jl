@@ -53,8 +53,48 @@ function coherent_minkowski_indices(
     return lookup
 end
 
+function cayley_to_minkowski_subdivision(
+        C::AbstractVector{<:PointVector},
+        cells::IncidenceMatrix
+    )
+    A = minkowski_projection(C)
+    M = minkowski_sum(A...)
+
+    labels = coherent_minkowski_indices(A, M)
+
+    _indices = Dict(vcat(
+        [Ref(l).+(1:length(a)) .=> Ref(i)
+        for ((i,a),l) in Iterators.zip(enumerate(A),
+            [0,(sum(length.(A[1:i-1])) for i in 2:n)...]
+        )
+       ]...)...)
+
+    return _cayley_to_minkowski_subdivision(M, cells, labels, _indices)
+end
+
+function _cayley_to_minkowski_subdivision(
+        M::AbstractVector{<:PointVector},
+        cells::AbstractVector{<:Vector},
+        cayley_to_minkowski::Dict,
+        which_point_set::Dict
+    )
+    incidence = IncidenceMatrix([
+             vec([lookup[v] for v in Iterators.product(t...)]) for t in separated_T
+            ])
+end
+
 function minkowski_sum(A::AbstractVector{<:PointVector}...)
     return vec([sum(v) for v in Iterators.product(A...)]) |> unique
+end
+
+function minkowski_projection(C::AbstractVector{<:PointVector}, n::Int)
+  d = length(C[1]) - n
+  A = [ 
+       [ C[j][1:d] for j in 1:length(C) if findfirst(==(1), C[j][end-n+1:end]) == i] 
+        for i in 1:n 
+      ]
+
+  return A
 end
 
 function mixed_subdivisions(G::Graph{Directed})
@@ -101,23 +141,44 @@ end
 
 function mixed_subdivisions(::Type{IncidenceMatrix}, A::AbstractVector{<:PointVector}...)
     M, subdivisions = mixed_subdivisions(A...)
+
+    incidences = IncidenceMatrix.(subdivisions)
+    for I in incidences
+        resize!(I, nrows(I), length(M))
+    end
     return M, IncidenceMatrix.(subdivisions)
 end
 
 function polytrope_duals(G::Graph{Directed})
   M,T = mixed_subdivisions(G)
+  incidences = IncidenceMatrix.([filter(x->1∈x, t) for t in T])
+  for I in incidences
+      resize!(I, nrows(I), length(M))
+  end
 
-  return mixed_subdivisions_as_complexes(M, IncidenceMatrix.([filter(x->1∈x, t) for t in T]))
+  return mixed_subdivisions_as_complexes(M, incidences)
 end
 
-function mixed_subdivisions_as_complexes(M, subdivisions) 
+function mixed_subdivisions_as_complexes(M::AbstractVector{<:PointVector}, subdivisions; project_full=true) 
   Mmat = reduce(hcat, M) |> transpose
-  return subdivision_of_points.(Ref(Mmat), subdivisions)
+
+  complexes = polyhedral_complex.(subdivisions, Mmat)
+  if project_full
+      output = PolyhedralComplex[]
+      for P in complexes
+          maximal_polyhedra(P)
+          push!(output, P.pm_complex |> Polymake.polytope.project_full |> polyhedral_complex)
+      end
+
+      return output
+  else return complexes
+  #return subdivision_of_points.(Ref(Mmat), subdivisions)
 end
 
 mixed_subdivisions_as_complexes(
-  A::AbstractVector{<:AbstractVector{T}}...
-) where {T} = mixed_subdivisions_as_complexes(mixed_subdivisions(A...))
+  A::AbstractVector{<:AbstractVector{T}}...;
+  project_full=true
+) where {T} = mixed_subdivisions_as_complexes(mixed_subdivisions(IncidenceMatrix, A...); project_full=true)
 # return [
 #     polyhedral_complex(IncidenceMatrix(subdivision...), M).pm_complex |> Polymake.polytope.project_full |> polyhedral_complex
 #     for subdivision in subdivisions
