@@ -37,31 +37,12 @@ function coherent_minkowski_indices(
     n = length(A)
     d = length(M[1])
 
-    _indices = [
-        Ref(l).+(1:length(a)) 
-        for (a,l) in Iterators.zip(A,
-            [0,(sum(length.(A[1:i-1])) for i in 2:n)...]
-        )
-    ]
-
-    C = vcat(A...)
-    lookup = Dict(
-                  t => findfirst(==(sum(C[collect(t)])), M)
-                  for t in Iterators.product(_indices...)
-                 )
-
-    return lookup
-end
-
-function cayley_to_minkowski_subdivision(
-        C::AbstractVector{<:PointVector},
-        cells::IncidenceMatrix
-    )
-    A = minkowski_projection(C)
-    M = minkowski_sum(A...)
-
-    labels = coherent_minkowski_indices(A, M)
-
+#    _indices = [
+#        Ref(l).+(1:length(a)) 
+#        for (a,l) in Iterators.zip(A,
+#            [0,(sum(length.(A[1:i-1])) for i in 2:n)...]
+#        )
+#    ]
     _indices = Dict(vcat(
         [Ref(l).+(1:length(a)) .=> Ref(i)
         for ((i,a),l) in Iterators.zip(enumerate(A),
@@ -69,18 +50,45 @@ function cayley_to_minkowski_subdivision(
         )
        ]...)...)
 
-    return _cayley_to_minkowski_subdivision(M, cells, labels, _indices)
+    C = vcat(A...)
+    lookup = Dict(
+                  t => findfirst(==(sum(C[collect(t)])), M)
+                  for t in Iterators.product(_indices...)
+                 )
+
+    return lookup, _indices
+end
+
+function cayley_to_minkowski_subdivision(
+        C::AbstractVector{<:PointVector},
+        cells::IncidenceMatrix,
+        n::Int
+    )
+    A = minkowski_projection(C, n)
+    M = minkowski_sum(A...)
+
+    labels, _indices = coherent_minkowski_indices(A, M)
+
+    return _cayley_to_minkowski_subdivision(M, cells, n, labels, _indices)
 end
 
 function _cayley_to_minkowski_subdivision(
         M::AbstractVector{<:PointVector},
-        cells::AbstractVector{<:Vector},
+        cells::IncidenceMatrix,
+        n::Int,
         cayley_to_minkowski::Dict,
         which_point_set::Dict
     )
+    separated_T = [
+                   filter.([v->which_point_set[v]==i for i in 1:n], Ref(t)) 
+                   for t in row.(Ref(cells), 1:nrows(cells))
+                  ]
+
     incidence = IncidenceMatrix([
-             vec([lookup[v] for v in Iterators.product(t...)]) for t in separated_T
+             vec([cayley_to_minkowski[v] for v in Iterators.product(t...)]) for t in separated_T
             ])
+
+    return subdivision_of_points(matrix(QQ, reduce(hcat, M)|>transpose), incidence)
 end
 
 function minkowski_sum(A::AbstractVector{<:PointVector}...)
@@ -111,16 +119,16 @@ function mixed_subdivisions(A::AbstractVector{<:PointVector}...)
     d = length(A |> first |> first)
     n = length(A)
 
-    _indices = Dict(vcat(
-        [Ref(l).+(1:length(a)) .=> Ref(i)
-        for ((i,a),l) in Iterators.zip(enumerate(A),
-            [0,(sum(length.(A[1:i-1])) for i in 2:n)...]
-        )
-       ]...)...)
+#    _indices = Dict(vcat(
+#        [Ref(l).+(1:length(a)) .=> Ref(i)
+#        for ((i,a),l) in Iterators.zip(enumerate(A),
+#            [0,(sum(length.(A[1:i-1])) for i in 2:n)...]
+#        )
+#       ]...)...)
 
     # Calculate which index belongs to which point set A_i
     M = minkowski_sum(A...)
-    minkowski_lookup = coherent_minkowski_indices(collect(A),M)
+    minkowski_lookup, _indices = coherent_minkowski_indices(collect(A),M)
     C = cayley_embedding(A...)
 
     CP = convex_hull(C)
@@ -192,7 +200,3 @@ mixed_subdivisions_as_complexes(
   A::AbstractVector{<:AbstractVector{T}}...;
   project_full=true
 ) where {T} = mixed_subdivisions_as_complexes(mixed_subdivisions(IncidenceMatrix, A...); project_full=true)
-# return [
-#     polyhedral_complex(IncidenceMatrix(subdivision...), M).pm_complex |> Polymake.polytope.project_full |> polyhedral_complex
-#     for subdivision in subdivisions
-# ]
