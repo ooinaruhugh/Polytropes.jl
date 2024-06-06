@@ -77,5 +77,26 @@ function opposite_graph(K::Graph{Directed})
     return graph_from_edges(Directed, [[dst(e), src(e)] for e in edges(K)], n_vertices(K))
 end
 
-indegree(G::Graph{Directed}, v::Int) = inneighbors(G, v) |> length
-outdegree(G::Graph{Directed}, v::Int) = outneighbors(G, v) |> length
+indegree(G::Graph, v::Int) = inneighbors(G, v) |> length
+outdegree(G::Graph, v::Int) = outneighbors(G, v) |> length
+
+function vertices_of_newton_polytope(G::Graph{Directed})
+    C = Vector{PointVector}[]
+    n = n_vertices(G)
+
+    for v in 1:n
+        Cv = [
+            point_vector([i==u for i in  1:n])
+            for u in [v,outneighbors(G, v)...]
+        ]
+
+        push!(C,Cv)
+    end
+
+    return C
+end
+
+function cayley_embedding_of_dual_vertices(G::Graph{Directed})
+    C = vertices_of_newton_polytope(G)
+    return cayley_embedding(C...)
+end
