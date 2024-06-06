@@ -11,24 +11,38 @@ function minkowski_sum(A::AbstractVector{<:PointVector}...)
     return Iterators.product(A...) .|> sum |> unique
 end
 
-@doc raw"""
-    minkowski_labels(A::AbstractVector{<:PointVector}; M::AbstractVector{<:PointVector})
-
-Calculates the labels of points in the Minkowski sum M of the point sets in A.
-The points in M can be provided as optional argument if calculated beforehand.
-"""
-function minkowski_labels(A::AbstractVector{<:PointVector}...; M=undef)
-    if M == undef
-        M = minkowski_sum(A...)
-    end
-    flatA = vcat(A...)
-
-    #combined_indices = reduce(vcat, map(splat(fill), length.(A)|>enumerate))
+function points_to_total_indices(A::AbstractVector{<:PointVector}...)
     l = 0
     combined_indices = Vector{Int}[]
     for (j,a) in enumerate(A)
         push!(combined_indices, (enumerate(a).|>first).+l)
         l += length(a)
+    end
+
+    return combined_indices
+end
+
+@doc raw"""
+    minkowski_labels(A::AbstractVector{<:PointVector})
+
+Calculates the labels of points in the Minkowski sum M of the point sets in A.
+The points in M can be provided as optional argument if calculated beforehand.
+"""
+function minkowski_labels(
+        A::AbstractVector{<:PointVector}...; 
+        M=nothing,
+        combined_indices=nothing
+    )
+    if M == nothing
+        M = minkowski_sum(A...)
+    end
+    flatA = vcat(A...)
+
+    #combined_indices = reduce(vcat, map(splat(fill), length.(A)|>enumerate))
+    # combined_indices replaces every point in each A[i] with the index
+    # this point would have if all A[i] were concatenated.
+    if combined_indices == nothing
+        combined_indices = points_to_total_indices(A...)
     end
 
     labels = Pair[]
@@ -56,124 +70,136 @@ function cayley_embedding(A::AbstractVector{<:PointVector}...)
     )
 end
 
-function coherent_minkowski_indices(
-        A::AbstractVector{<:AbstractVector{<:PointVector}}, 
-        M::AbstractVector{<:PointVector}
-    )
-    n = length(A)
-    d = length(M[1])
+function inverse_cayley_embedding(C::AbstractVector{<:PointVector}, n::Int)
+    A_with_j = map(x->(x[1:end-n], findfirst(==(1), x[end+1-n:end])), C)
 
-#    _indices = [
-#        Ref(l).+(1:length(a)) 
-#        for (a,l) in Iterators.zip(A,
-#            [0,(sum(length.(A[1:i-1])) for i in 2:n)...]
-#        )
-#    ]
-    _indices = Dict(vcat(
-        [Ref(l).+(1:length(a)) .=> Ref(i)
-        for ((i,a),l) in Iterators.zip(enumerate(A),
-            [0,(sum(length.(A[1:i-1])) for i in 2:n)...]
-        )
-       ]...)...)
-
-    C = vcat(A...)
-    lookup = Dict(
-                  t => findfirst(==(sum(C[collect(t)])), M)
-                  for t in Iterators.product(_indices...)
-                 )
-
-    return lookup, _indices
+    return map.(Ref(first), 
+             filter(x->last(x)==j, A_with_j) for j in 1:n
+            )
 end
 
-function cayley_to_minkowski_subdivision(
+@doc raw"""
+    minkowski_projection(IncidenceMatrix, S::SubdivisionOfPoints, n::Int)
+
+For a subdivision `S` of the Cayley embedding of `n` point sets, 
+calculates the corresponding mixed subdivision of the Minkowski sum of the point sets
+as incidence matrix.
+"""
+function minkowski_projection(::Type{IncidenceMatrix}, S::SubdivisionOfPoints, n::Int; M=nothing)
+    return minkowski_projection(points(S), maximal_cells(IncidenceMatrix, S), n; M=M)
+end
+
+@doc raw"""
+    minkowski_projection(IncidenceMatrix, S::SubdivisionOfPoints, n::Int)
+
+For a subdivision `S` of the Cayley embedding of `n` point sets, 
+calculates the corresponding mixed subdivision of the Minkowski sum of the point sets.
+"""
+function minkowski_projection(S::SubdivisionOfPoints, n::Int; M=nothing)
+    if M == nothing
+        C = points(S)
+        A_with_j = map(x->(x[1:end-n], findfirst(==(1), x[end+1-n:end])), C)
+
+        A = map.(Ref(first), 
+                 filter(x->last(x)==j, A_with_j) for j in 1:n
+                )
+        
+        M = minkowski_sum(A...)
+    end
+
+    return subdivision_of_points(
+                 reduce(hcat, M) |> transpose, 
+                 minkowski_projection(IncidenceMatrix, S, n; M=M)
+           )
+end
+
+@doc raw"""
+    minkowski_projection(C::AbstractVector{<:PointVector}, cells::IncidenceMatrix, n::Int)
+
+For a subdivision given by `cells` of the Cayley embedding `C` of `n` point sets,
+calculates the corresponding mixed subdivision of the Minkowski sum.
+"""
+function minkowski_projection(
         C::AbstractVector{<:PointVector},
         cells::IncidenceMatrix,
-        n::Int
+        n::Int;
+        M=nothing,
+        labels=nothing
     )
-    A = minkowski_projection(C, n)
-    M = minkowski_sum(A...)
 
-    labels, _indices = coherent_minkowski_indices(A, M)
+    A_with_j = map(x->(x[1:end-n], findfirst(==(1), x[end+1-n:end])), C)
 
-    return _cayley_to_minkowski_subdivision(M, cells, n, labels, _indices)
+    to_point_set = last.(A_with_j)
+    A = map.(Ref(first), 
+             filter(x->last(x)==j, A_with_j) for j in 1:n
+            )
+
+    if M == nothing
+        M = minkowski_sum(A...)
+    end
+
+    if labels == nothing
+        labels = minkowski_labels(A...; M=M)
+    end
+
+    projected_incidences = Vector{Int}[]
+    for j in 1:nrows(cells)
+        separated_row = filter.([x->to_point_set[x]==i for i in 1:n], Ref(row(cells, j)))
+        labels_of_cell = Iterators.product(separated_row...) |> collect |> vec
+        push!(projected_incidences, get.(Ref(labels), labels_of_cell, 0))
+    end
+
+    return IncidenceMatrix(projected_incidences)
 end
 
-function _cayley_to_minkowski_subdivision(
-        M::AbstractVector{<:PointVector},
-        cells::IncidenceMatrix,
-        n::Int,
-        cayley_to_minkowski::Dict,
-        which_point_set::Dict
-    )
-    separated_T = [
-                   filter.([v->which_point_set[v]==i for i in 1:n], Ref(t)) 
-                   for t in row.(Ref(cells), 1:nrows(cells))
-                  ]
-
-    incidence = IncidenceMatrix([
-             vec([cayley_to_minkowski[v] for v in Iterators.product(t...)]) for t in separated_T
-            ])
-
-    return subdivision_of_points(matrix(QQ, reduce(hcat, M)|>transpose), incidence)
-end
-
-function minkowski_sum(A::AbstractVector{<:PointVector}...)
-    return vec([sum(v) for v in Iterators.product(A...)]) |> unique
-end
-
-function minkowski_projection(C::AbstractVector{<:PointVector}, n::Int)
-  d = length(C[1]) - n
-  A = [ 
-       [ C[j][1:d] for j in 1:length(C) if findfirst(==(1), C[j][end-n+1:end]) == i] 
-        for i in 1:n 
-      ]
-
-  return A
-end
-
-function mixed_subdivisions(G::Graph{Directed})
+function fine_mixed_subdivisions(G::Graph{Directed})
   A = vertices_of_newton_polytope(G)
-  return mixed_subdivisions(A...)
+  return fine_mixed_subdivisions(A...)
 end
 
-function mixed_subdivisions(::Type{IncidenceMatrix}, G::Graph{Directed})
+@doc raw"""
+    fine_mixed_subdivisions(IncidenceMatrix, G::Graph{Directed})
+"""
+function fine_mixed_subdivisions(::Type{IncidenceMatrix}, G::Graph{Directed})
   A = vertices_of_newton_polytope(G)
-  return mixed_subdivisions(IncidenceMatrix, A...)
+  return fine_mixed_subdivisions(IncidenceMatrix, A...)
 end
 
-function mixed_subdivisions(A::AbstractVector{<:PointVector}...)
+@doc raw"""
+    fine_mixed_subdivisions(A::AbstractVector{<:PointVector}...)
+
+Gives a list of fine mixed subdivisions of the Minkowski sum of `A[1]`, `A[2]`, ..., `A[n]`
+together with the Minkowski sum itself.
+"""
+function fine_mixed_subdivisions(A::AbstractVector{<:PointVector}...)
     d = length(A |> first |> first)
     n = length(A)
 
-#    _indices = Dict(vcat(
-#        [Ref(l).+(1:length(a)) .=> Ref(i)
-#        for ((i,a),l) in Iterators.zip(enumerate(A),
-#            [0,(sum(length.(A[1:i-1])) for i in 2:n)...]
-#        )
-#       ]...)...)
+    combined_indices = points_to_total_indices(A...)
 
     # Calculate which index belongs to which point set A_i
     M = minkowski_sum(A...)
-    minkowski_lookup, _indices = coherent_minkowski_indices(collect(A),M)
+    labels = minkowski_labels(A...; M=M, combined_indices=combined_indices)
     C = cayley_embedding(A...)
 
     CP = convex_hull(C)
-    Tri::Vector{Vector{Vector{Int}}} = CP.pm_polytope |> Polymake.polytope.project_full |> polyhedron |> all_triangulations
+    Tri = CP.pm_polytope |> Polymake.polytope.project_full |> polyhedron |> all_triangulations
 
-    subdivisions = Vector{<:Vector}[]
-    for T in Tri
-      separated_T = [filter.([v->_indices[v]==i for i in 1:n], Ref(t)) for t in T]
-
-      push!(subdivisions, 
-            [
-             vec([minkowski_lookup[v] for v in Iterators.product(t...)]) for t in separated_T
-            ])
-    end
+    subdivisions = [
+      minkowski_projection(C, IncidenceMatrix(T), n; M=M, labels=labels)
+      for T in Tri
+    ]
 
     return M, subdivisions
 end
 
-function mixed_subdivisions(::Type{IncidenceMatrix}, A::AbstractVector{<:PointVector}...)
+@doc raw"""
+    fine_mixed_subdivisions(IncidenceMatrix, A::AbstractVector{<:PointVector}...)
+
+Gives a list of `IncidenceMatrix` for fine mixed subdivisions of the Minkowski sum 
+of `A[1]`, `A[2]`, ..., `A[n]` together with the Minkowski sum itself.
+"""
+function fine_mixed_subdivisions(::Type{IncidenceMatrix}, A::AbstractVector{<:PointVector}...)
     M, subdivisions = mixed_subdivisions(A...)
 
     incidences = IncidenceMatrix.(subdivisions)
