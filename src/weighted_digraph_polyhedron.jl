@@ -16,7 +16,7 @@ end
 @doc raw"""
     weighted_digraph_polyhedron(G::Graph{Directed}, w::AbstractVector{<:RingElem})
 
-The weighted digraph polyhedron $Q(G)$ is defined by the lienar inequalities 
+The weighted digraph polyhedron $Q(G)$ is defined by the linear inequalities 
 $x_i - x_j \leq w_{ij}$ where $w_{ij}$ is the weight of edge $j\to i$.
 """
 function weighted_digraph_polyhedron(
