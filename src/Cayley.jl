@@ -1,26 +1,52 @@
 using Oscar
+import Oscar: minkowski_sum
 
-function vertices_of_newton_polytope(G::Graph{Directed})
-    C = Vector{PointVector}[]
-    n = n_vertices(G)
+@doc raw"""
+    minkowski_sum(A::AbstractVector{<:PointVector})
 
-    for v in 1:n
-        Cv = [
-            point_vector([i==u for i in  1:n])
-            for u in [v,outneighbors(G, v)...]
-        ]
+Return the Minkowski sum $\{ \sum_{i=1}^n a_i \mid a_i\in A_i \}$ of
+the point sets in `A`.
+"""
+function minkowski_sum(A::AbstractVector{<:PointVector}...)
+    return Iterators.product(A...) .|> sum |> unique
+end
 
-        push!(C,Cv)
+@doc raw"""
+    minkowski_labels(A::AbstractVector{<:PointVector}; M::AbstractVector{<:PointVector})
+
+Calculates the labels of points in the Minkowski sum M of the point sets in A.
+The points in M can be provided as optional argument if calculated beforehand.
+"""
+function minkowski_labels(A::AbstractVector{<:PointVector}...; M=undef)
+    if M == undef
+        M = minkowski_sum(A...)
+    end
+    flatA = vcat(A...)
+
+    #combined_indices = reduce(vcat, map(splat(fill), length.(A)|>enumerate))
+    l = 0
+    combined_indices = Vector{Int}[]
+    for (j,a) in enumerate(A)
+        push!(combined_indices, (enumerate(a).|>first).+l)
+        l += length(a)
     end
 
-    return C
+    labels = Pair[]
+    for v in Iterators.product(combined_indices...)
+        m = sum(flatA[collect(v)])
+
+        push!(labels, v => findfirst(==(m), M))
+    end
+
+    return Dict(labels)
 end
 
-function cayley_embedding_of_dual_vertices(G::Graph{Directed})
-    C = vertices_of_newton_polytope(G)
-    return cayley_embedding(C...)
-end
+@doc raw"""
+    cayley_embedding(A::AbstractVector{<:PointVector}...)
 
+For point sets $A_1, A_2, \dots, A_n\subset \mathbb{R}^d$, the Cayley embedding
+is defined as $\mathcal{C}(A_1,\dots,A_n) = \bigcup_{j=1}^n \{ a\times e_j \mid a\in A_i \} \subset \mathbb{R}^d\times\mathbb{R}^n$.
+"""
 function cayley_embedding(A::AbstractVector{<:PointVector}...)
     n = length(A)
 
