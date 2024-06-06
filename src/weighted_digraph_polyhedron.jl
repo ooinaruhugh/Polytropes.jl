@@ -1,37 +1,42 @@
 using Oscar
 import Oscar: ZZRingElem, RayVector, QQFieldElem
 
-Vector{ZZRingElem}(v::RayVector{QQFieldElem}) = ZZ.(convert(Vector, v))
-
-function polytrope(G::Graph{Directed}, w::AbstractVector)
+function polytrope(G::Graph{Directed}, w::AbstractVector{<:RingElem})
+  R = parent(w[1])
   n = number_of_vertices(G)
   A = sparse_matrix(QQ)
 
   for e in edges(G)
-    push!(A, sparse_row(QQ, [(src(e), -1), (dst(e),1)]))
+    push!(A, sparse_row(R, [(src(e), -1), (dst(e),1)]))
   end
 
-  return polyhedron(MatElem(A), w)
+  return polyhedron(matrix(A), w)
 end
 
-function weighted_digraph_polyhedron(G::Graph{Directed}, w)
+@doc raw"""
+    weighted_digraph_polyhedron(G::Graph{Directed}, w::AbstractVector{<:RingElem})
+
+The weighted digraph polyhedron $Q(G)$ is defined by the lienar inequalities 
+$x_i - x_j \leq w_{ij}$ where $w_{ij}$ is the weight of edge $j\to i$.
+"""
+function weighted_digraph_polyhedron(
+        G::Graph{Directed}, 
+        w::AbstractVector{<:RingElem}
+    )
     # This is already happening in the tropical projective torus
+    R = parent(w[1])
+
     n = number_of_vertices(G) - 1
-    A = []
+    A = sparse_matrix(R)
 
     for e in edges(G)
-        row = zero(1:n)
+        row = [(dst(e)-1, 1)]
         if src(e) != 1
-            row[src(e)-1] = -1
+            push!(row, (src(e)-1, -1))
         end
-        # if dst(e) != 1
-            row[dst(e)-1] = 1
-        # end
 
-        push!(A, row)
+        push!(A, sparse_row(R, row))
     end
 
-    A = reduce(hcat, A)'
-
-    return polyhedron(A, w)
+    return polyhedron(matrix(A), w)
 end
