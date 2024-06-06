@@ -231,13 +231,7 @@ function fine_mixed_subdivisions(
     Mmat = matrix(QQ, reduce(hcat, M) |> transpose)
 
     if project_full
-      π = sparse_matrix(QQ)
-      for i in 2:d
-          push!(π, sparse_row(QQ, [(i,QQ(1))]))
-      end
-      π = matrix(π) |> transpose
-
-      return subdivision_of_points.(Ref(Mmat*π), subdivisions)
+      return subdivision_of_points.(Ref(project_matrix(Mmat)), subdivisions)
     else
       return subdivision_of_points.(Ref(Mmat), subdivisions)
     end
@@ -269,13 +263,7 @@ function fine_mixed_subdivisions(
   d = length(M[1])
 
   if project_full
-      π = sparse_matrix(QQ)
-      for i in 2:d
-          push!(π, sparse_row(QQ, [(i,QQ(1))]))
-      end
-      π = matrix(π) |> transpose
-
-      return polyhedral_complex.(subdivisions, Ref(Mmat*π))
+      return polyhedral_complex.(subdivisions, Ref(project_matrix(Mmat)))
   else 
       return polyhedral_complex.(subdivisions, Ref(Mmat))
   end
@@ -305,13 +293,7 @@ function polytrope_face_figures(
 
   Mmat = matrix(QQ, reduce(hcat, M) |> transpose)
   if project_full
-      π = sparse_matrix(QQ)
-      for i in 2:d
-          push!(π, sparse_row(QQ, [(i,QQ(1))]))
-      end
-      π = matrix(π) |> transpose
-
-      return subdivision_of_points.(Ref(Mmat*π), polytrope_filters)
+      return subdivision_of_points.(Ref(project_matrix(Mmat)), polytrope_filters)
   else 
       return subdivision_of_points.(Ref(Mmat), polytrope_filters)
   end
@@ -325,15 +307,19 @@ function polytrope_face_figures(
 
   Mmat = matrix(QQ, reduce(hcat, M) |> transpose)
   if project_full
-      π = sparse_matrix(QQ)
-      for i in 2:d
-          push!(π, sparse_row(QQ, [(i,QQ(1))]))
-      end
-      π = matrix(π) |> transpose
-
-      return polyhedral_complex.(polytrope_filters, Ref(Mmat*π))
+      return polyhedral_complex.(polytrope_filters, Ref(project_matrix(Mmat)))
   else 
       return polyhedral_complex.(polytrope_filters, Ref(Mmat))
   end
 end
 
+function project_matrix(M::MatElem)
+  d = size(M)[2]
+
+  π = sparse_matrix(QQ)
+  for i in 2:d
+      push!(π, sparse_row(QQ, [(i,QQ(1))]))
+  end
+  π = matrix(π) |> transpose
+  return M*π
+end
