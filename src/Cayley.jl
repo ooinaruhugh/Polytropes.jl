@@ -228,7 +228,7 @@ function fine_mixed_subdivisions(
 )
     M, subdivisions = fine_mixed_subdivisions(IncidenceMatrix, A...)
     d = length(M[1])
-    Mmat = matrix(QQ, reduce(hcat, M) |> transpose)
+    Mmat = reduce(hcat, M) |> transpose
 
     if project_full
       return subdivision_of_points.(Ref(project_matrix(Mmat)), subdivisions)
@@ -249,16 +249,7 @@ function fine_mixed_subdivisions(
   project_full=true
 )
   M, subdivisions = fine_mixed_subdivisions(IncidenceMatrix, A...)
-  
-  return fine_mixed_subdivisions(PolyhedralComplex, M, subdivisions; project_full=project_full)
-end
 
-function fine_mixed_subdivisions(
-        ::Type{PolyhedralComplex}, 
-        M::AbstractVector{<:PointVector}, 
-        subdivisions; 
-        project_full=true
-) 
   Mmat = reduce(hcat, M) |> transpose
   d = length(M[1])
 
@@ -289,9 +280,10 @@ function polytrope_face_figures(
   ::Type{SubdivisionOfPoints}, G::Graph{Directed}; project_full=true
 )
   M, polytrope_filters = polytrope_face_figures(IncidenceMatrix, G)
+  k = parent(M[1][1])
   d = length(M[1])
 
-  Mmat = matrix(QQ, reduce(hcat, M) |> transpose)
+  Mmat = matrix(k, reduce(hcat, M) |> transpose)
   if project_full
       return subdivision_of_points.(Ref(project_matrix(Mmat)), polytrope_filters)
   else 
@@ -303,9 +295,10 @@ function polytrope_face_figures(
   ::Type{PolyhedralComplex}, G::Graph{Directed}; project_full=true
 )
   M, polytrope_filters = polytrope_face_figures(IncidenceMatrix, G)
+  k = parent(M[1][1])
   d = length(M[1])
 
-  Mmat = matrix(QQ, reduce(hcat, M) |> transpose)
+  Mmat = matrix(k, reduce(hcat, M) |> transpose)
   if project_full
       return polyhedral_complex.(polytrope_filters, Ref(project_matrix(Mmat)))
   else 
@@ -315,11 +308,34 @@ end
 
 function project_matrix(M::MatElem)
   d = size(M)[2]
+  k = base_ring(M)
 
-  p = sparse_matrix(QQ)
+  p = sparse_matrix()
   for i in 2:d
-      push!(p, sparse_row(QQ, [(i,QQ(1))]))
+      push!(p, sparse_row(k, [(i,k(1))]))
   end
   p = matrix(p) |> transpose
   return M*p
+end
+
+function secondary_fan_of_polytropes(G::Graph{Directed})
+    A = cayley_embedding_of_dual_vertices(G)
+
+    return secondary_fan(A)
+end
+
+function secondary_fan(V::AbstractVector{<:PointVector})
+    k = parent(V[1][1])
+    Vmat = matrix(k, reduce(hcat, V) |> transpose)
+
+    return secondary_fan(Vmat)
+end
+
+function secondary_fan(V::MatElem)
+    Polymake.Shell.tmp = convert(Polymake.PolymakeType, V)
+    Polymake.shell_execute(raw"""$tmp = new polytope::PointConfiguration(POINTS=>$tmp);""")
+    sF = Polymake.Shell.tmp |> Polymake.fan.secondary_fan |> polyhedral_fan
+    Polymake.shell_execute(raw"""undef($tmp);""")
+
+    return sF
 end
