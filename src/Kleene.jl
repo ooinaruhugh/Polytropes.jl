@@ -58,7 +58,9 @@ function kleene_graph(G::Graph{Directed})
     groups = sort(F;lt=!isless,by=length) .|> (f -> [findfirst(x->x==m,V) for m in f])
 
     # Find the index of the first and last edge in every path. The variables are sorted nicely in acyclic graphs, so they're just the first and last non-zero exponent.
-    k = V .|> y->[findfirst(x->x==1, y), findlast(x->x==1, y)]
+    k = map(V) do y 
+      findfirst(x->x==1, y), findlast(x->x==1, y)
+    end
     factored_paths::Vector{Vector{Vector{Int}}} = [
         [x - unit_vector(Int, N, k[i] |> first), x - unit_vector(Int, N, k[i] |> last)]
         for (i,x) in enumerate(V)
