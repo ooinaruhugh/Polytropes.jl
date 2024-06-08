@@ -4,7 +4,7 @@ import Oscar: ZZRingElem, RayVector, QQFieldElem
 function polytrope(G::Graph{Directed}, w::AbstractVector{<:RingElem})
   R = parent(w[1])
   n = number_of_vertices(G)
-  A = sparse_matrix(QQ)
+  A = sparse_matrix(R)
 
   for e in edges(G)
     push!(A, sparse_row(R, [(src(e), -1), (dst(e),1)]))
