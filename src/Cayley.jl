@@ -45,14 +45,11 @@ function minkowski_labels(
         combined_indices = points_to_total_indices(A...)
     end
 
-    labels = Pair[]
-    for v in Iterators.product(combined_indices...)
+    return Dict(map(Iterators.product(combined_indices...)) do v
         m = sum(flatA[collect(v)])
 
-        push!(labels, v => findfirst(==(m), M))
-    end
-
-    return Dict(labels)
+        v => findfirst(==(m), M)
+    end)
 end
 
 @doc raw"""
@@ -98,9 +95,13 @@ calculates the corresponding mixed subdivision of the Minkowski sum of the point
 function minkowski_projection(S::SubdivisionOfPoints, n::Int; M=nothing)
     if M == nothing
         C = points(S)
-        A_with_j = map(x->(x[1:end-n], findfirst(==(1), x[end+1-n:end])), C)
+        A_with_j = map(C) do x 
+            x[1:end-n], findfirst(==(1), x[end+1-n:end])
+        end
 
-        A = map.(Ref(first), filter(x->last(x)==j, A_with_j) for j in 1:n)
+        A = map(1:n) do j
+            first.(filter(x->last(x)==j, A_with_j))
+        end
         
         M = minkowski_sum(A...)
     end
@@ -124,8 +125,9 @@ function minkowski_projection(
     M=nothing,
     labels=nothing
 )
-
-    A_with_j = map(x->(x[1:end-n], findfirst(==(1), x[end+1-n:end])), C)
+    A_with_j = map(C) do x 
+        x[1:end-n], findfirst(==(1), x[end+1-n:end])
+    end
 
     to_point_set = last.(A_with_j)
     A = map.(Ref(first), filter(x->last(x)==j, A_with_j) for j in 1:n)
@@ -138,12 +140,11 @@ function minkowski_projection(
         labels = minkowski_labels(A...; M=M)
     end
 
-    projected_incidences = Vector{Int}[]
-    for j in 1:nrows(cells)
+    projected_incidences = map(1:nrows(cells)) do j
         separated_row = filter.([x->to_point_set[x]==i for i in 1:n], Ref(row(cells, j)))
         labels_of_cell = Iterators.product(separated_row...) |> collect |> vec
 
-        push!(projected_incidences, get.(Ref(labels), labels_of_cell, 0))
+        get.(Ref(labels), labels_of_cell, 0)
     end
 
     return projected_incidences
@@ -188,10 +189,9 @@ function fine_mixed_subdivisions(A::AbstractVector{<:PointVector}...)
     CP = convex_hull(C)
     Tri = CP.pm_polytope |> Polymake.polytope.project_full |> polyhedron |> all_triangulations
 
-    subdivisions = [
+    subdivisions = map(Tri) do T
       minkowski_projection(C, IncidenceMatrix(T), n; M=M, labels=labels)
-      for T in Tri
-    ]
+    end
 
     return M, subdivisions
 end
@@ -316,10 +316,10 @@ end
 function project_matrix(M::MatElem)
   d = size(M)[2]
 
-  π = sparse_matrix(QQ)
+  p = sparse_matrix(QQ)
   for i in 2:d
-      push!(π, sparse_row(QQ, [(i,QQ(1))]))
+      push!(p, sparse_row(QQ, [(i,QQ(1))]))
   end
-  π = matrix(π) |> transpose
-  return M*π
+  p = matrix(p) |> transpose
+  return M*p
 end
