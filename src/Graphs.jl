@@ -62,7 +62,7 @@ end
 function variable_labels(G::Graph{Directed})
     #E = edges_by_target(G)
     E = edges(G)
-    return map(e->"e$(e.source)$(e.target)", E)
+    return map(e->"e$(src(e))$(dst(e))", E)
 end
 
 function edges_by_target(G::Graph{Directed})
@@ -81,19 +81,11 @@ indegree(G::Graph, v::Int) = inneighbors(G, v) |> length
 outdegree(G::Graph, v::Int) = outneighbors(G, v) |> length
 
 function vertices_of_newton_polytope(G::Graph{Directed})
-    C = Vector{PointVector}[]
     n = n_vertices(G)
 
-    for v in 1:n
-        Cv = [
-            point_vector([i==u for i in  1:n])
-            for u in [v,outneighbors(G, v)...]
-        ]
-
-        push!(C,Cv)
+    return map(1:n) do v
+        [point_vector([i==u for i in 1:n]) for u in [v,outneighbors(G, v)...]]
     end
-
-    return C
 end
 
 function cayley_embedding_of_dual_vertices(G::Graph{Directed})
