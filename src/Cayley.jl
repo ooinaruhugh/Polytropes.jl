@@ -81,7 +81,7 @@ calculates the corresponding mixed subdivision of the Minkowski sum of the point
 as incidence matrix.
 """
 function minkowski_projection(::Type{IncidenceMatrix}, S::SubdivisionOfPoints, n::Int; M=nothing)
-    return IncidenceMatrix.(
+    return IncidenceMatrix(
         minkowski_projection(points(S), maximal_cells(IncidenceMatrix, S), n; M=M)
     )
 end
@@ -338,4 +338,39 @@ function secondary_fan(V::MatElem)
     Polymake.shell_execute(raw"""undef($tmp);""")
 
     return sF
+end
+
+function interior_points_of_cones(P::PolyhedralFan)
+  if lineality_dim(P) > 0
+      return maximal_cones(P) .|> rays_modulo_lineality .|> first .|> sum
+  else
+      return maximal_cones(P) .|> rays .|> sum
+  end
+end
+
+function height_to_weight(G::Graph{Directed}, h::AbstractVector{T}) where {T}
+  w = T[]
+  sizehint!(w, n_edges(G))
+
+  l = 1
+  for j in 1:n_vertices(G)
+      push!.(Ref(w), h[l+1:l+outdegree(G,j)] .- h[l])
+      l += outdegree(G,j) + 1
+  end
+
+  return w
+end
+
+function weight_to_height(G::Graph{Directed}, w::AbstractVector{T}) where {T}
+  h = T[]
+  sizehint!(h, n_edges(G) + n_vertices(G))
+
+  l = 0
+  for j in 1:n_vertices(G)
+      push!(h, 0)
+      push!.(Ref(h), w[1+l:l+outdegree(G,j)])
+      l += outdegree(G, j)
+  end
+
+  return h
 end
