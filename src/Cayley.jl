@@ -227,8 +227,9 @@ function fine_mixed_subdivisions(
     project_full=true
 )
     M, subdivisions = fine_mixed_subdivisions(IncidenceMatrix, A...)
+    k = parent(M[1][1])
     d = length(M[1])
-    Mmat = reduce(hcat, M) |> transpose
+    Mmat = matrix(k, reduce(hcat, M) |> transpose)
 
     if project_full
       return subdivision_of_points.(Ref(project_matrix(Mmat)), subdivisions)
@@ -249,8 +250,9 @@ function fine_mixed_subdivisions(
   project_full=true
 )
   M, subdivisions = fine_mixed_subdivisions(IncidenceMatrix, A...)
+  k = parent(M[1][1])
 
-  Mmat = reduce(hcat, M) |> transpose
+  Mmat = matrix(k, reduce(hcat, M) |> transpose)
   d = length(M[1])
 
   if project_full
@@ -310,7 +312,7 @@ function project_matrix(M::MatElem)
   d = size(M)[2]
   k = base_ring(M)
 
-  p = sparse_matrix()
+  p = sparse_matrix(k)
   for i in 2:d
       push!(p, sparse_row(k, [(i,k(1))]))
   end
