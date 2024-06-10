@@ -262,6 +262,25 @@ function fine_mixed_subdivisions(
   end
 end
 
+function embed_subdivision_in_full_simplex(S::SubdivisionOfPoints, n::Int)
+    V = points(S) |> collect
+    M_simplex = minkowski_sum([vertices(simplex(n-1)) for _ in 1:n]...)
+
+    if ambient_dim(S) == n
+      V .= map(V) do v 
+        v[2:end] 
+      end
+    elseif ambient_dim(S) != n-1
+
+    end
+
+    M = reduce(hcat, vcat(V, M_simplex) |> unique) |> transpose
+    incidence = maximal_cells(IncidenceMatrix,S)
+    resize!(incidence, nrows(incidence), size(M)[1])
+
+    return subdivision_of_points(M, incidence)
+end
+
 function polytrope_face_figures(::Type{IncidenceMatrix}, G::Graph{Directed})
   A = vertices_of_newton_polytope(G)
 
