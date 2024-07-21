@@ -70,7 +70,7 @@ function edges_by_target(G::Graph{Directed})
 end
 
 function edge_of_gen(G::Graph{Directed}, x::QQMPolyRingElem)
-    return edges_by_target(G)[findfirst(y->y==x, edge_ring((G)) |> gens)]
+    return edges(G)[findfirst(y->y==x, edge_ring(G) |> gens)]
 end
 
 function opposite_graph(K::Graph{Directed})
