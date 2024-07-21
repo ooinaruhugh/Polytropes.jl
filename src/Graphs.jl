@@ -53,21 +53,19 @@ Bijection Dict{Edge, Int64} with 3 entries:
 ```
 """
 function indices(G::Graph{Directed})
-    #E = edges_by_target(G)
     E = edges(G)
 
-    return Bijection(Dict(zip(E, 1:length(E))))
+    return Dict(zip(E, 1:length(E)))
 end
 
 function variable_labels(G::Graph{Directed})
-    #E = edges_by_target(G)
     E = edges(G)
     return map(e->"e$(src(e))$(dst(e))", E)
 end
 
-function edges_by_target(G::Graph{Directed})
-    return sort(edges(G) |> collect; by=x->x.target)
-end
+#function edges_by_target(G::Graph{Directed})
+#    return sort(edges(G) |> collect; by=x->x.target)
+#end
 
 function edge_of_gen(G::Graph{Directed}, x::QQMPolyRingElem)
     return edges(G)[findfirst(y->y==x, edge_ring(G) |> gens)]
@@ -80,15 +78,15 @@ end
 indegree(G::Graph, v::Int) = inneighbors(G, v) |> length
 outdegree(G::Graph, v::Int) = outneighbors(G, v) |> length
 
-function vertices_of_newton_polytope(G::Graph{Directed})
-    n = n_vertices(G)
-
-    return map(1:n) do v
-        [point_vector([i==u for i in 1:n]) for u in [v,outneighbors(G, v)...]]
-    end
-end
-
-function cayley_embedding_of_dual_vertices(G::Graph{Directed})
-    C = vertices_of_newton_polytope(G)
-    return cayley_embedding(C...)
-end
+#function vertices_of_newton_polytope(G::Graph{Directed})
+#    n = n_vertices(G)
+#
+#    return map(1:n) do v
+#        [point_vector([i==u for i in 1:n]) for u in [v,outneighbors(G, v)...]]
+#    end
+#end
+#
+#function cayley_embedding_of_dual_vertices(G::Graph{Directed})
+#    C = vertices_of_newton_polytope(G)
+#    return cayley_embedding(C...)
+#end
