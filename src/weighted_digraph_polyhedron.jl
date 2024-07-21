@@ -1,41 +1,39 @@
 using Oscar
-import Oscar: ZZRingElem, RayVector, QQFieldElem
-
-function polytrope(G::Graph{Directed}, w::AbstractVector{<:RingElem})
-  R = parent(w[1])
-  n = number_of_vertices(G)
-  A = sparse_matrix(R)
-
-  for e in edges(G)
-    push!(A, sparse_row(R, [(src(e), -1), (dst(e),1)]))
-  end
-
-  return polyhedron(matrix(A), w)
-end
+import Oscar: RingElem 
 
 @doc raw"""
-    weighted_digraph_polyhedron(G::Graph{Directed}, w::AbstractVector{<:RingElem})
+    weighted_digraph_polyhedron(
+        G::Graph{Directed}, 
+        w::AbstractVector{<:RingElem};
+        modulo_lineality=true
+    )
 
-The weighted digraph polyhedron $Q(G)$ is defined by the linear inequalities 
+The weighted digraph polyhedron $\mathrm{Q}(G)$ is defined by the linear inequalities 
 $x_i - x_j \leq w_{ij}$ where $w_{ij}$ is the weight of edge $j\to i$.
+
+The default behaviour is to return $\mathrm{Q}(G)$ modulo the subspace spanned by
+$(1,1,\dots,1)$ which is controlled by `modulo_lineality`.
 """
 function weighted_digraph_polyhedron(
         G::Graph{Directed}, 
-        w::AbstractVector{<:RingElem}
+        w::AbstractVector{<:RingElem};
+        modulo_lineality=true
     )
-    # This is already happening in the tropical projective torus
     R = parent(w[1])
-
-    n = number_of_vertices(G) - 1
     A = sparse_matrix(R)
+    if modulo_lineality
+        for e in edges(G)
+            row = [(dst(e)-1, 1)]
+            if src(e) != 1
+                push!(row, (src(e)-1, -1))
+            end
 
-    for e in edges(G)
-        row = [(dst(e)-1, 1)]
-        if src(e) != 1
-            push!(row, (src(e)-1, -1))
+            push!(A, sparse_row(R, row))
         end
-
-        push!(A, sparse_row(R, row))
+    else
+        for e in edges(G)
+            push!(A, sparse_row(R, [(src(e), -1), (dst(e),1)]))
+        end
     end
 
     return polyhedron(matrix(A), w)
