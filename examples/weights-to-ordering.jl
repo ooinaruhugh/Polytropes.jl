@@ -12,7 +12,7 @@ make_integral_coords(v::AbstractVector{QQFieldElem}) = Int.(v./gcd(v))
 # Method 1: Using the Groebner fan to produce weights
 ## Creating the weighted digraph polyhedra
 GF = groebner_fan(I)
-GF_w = -Vector.(maximal_cones(GF) .|> rays_modulo_lineality .|> first .|> sum)
+GF_w = Vector.(maximal_cones(GF) .|> rays_modulo_lineality .|> first .|> sum)
 GF_Q = weighted_digraph_polyhedron.(Ref(G), GF_w)
 
 ## Comparing with the satisfying assignments

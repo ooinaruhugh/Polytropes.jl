@@ -17,12 +17,8 @@ export opposite_graph
 export indegree
 export outdegree
 
-export edges_for_variables
-
 export edge_ring
-export design_matrix
-export toric_ideal
-export markov_basis
+export all_pairs_shortest_path_ideal
 
 export weighted_digraph_polyhedron
 
