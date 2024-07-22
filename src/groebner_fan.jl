@@ -28,3 +28,15 @@ function transitively_closed_acyclic_graphs(n::Int)
 
     return output
 end
+
+function fan_modulo_lineality(P::PolyhedralFan)
+
+end
+
+function interior_points_of_cones(P::PolyhedralFan)
+  if lineality_dim(P) > 0
+      return maximal_cones(P) .|> rays_modulo_lineality .|> first .|> sum
+  else
+      return maximal_cones(P) .|> rays .|> sum
+  end
+end
