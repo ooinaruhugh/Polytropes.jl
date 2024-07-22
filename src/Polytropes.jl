@@ -5,6 +5,7 @@ import Oscar
 include("Graphs.jl")
 include("ToricIdeal.jl")
 include("weighted_digraph_polyhedron.jl")
+include("groebner_fan.jl")
 
 include("Transitivity.jl")
 import .Transitivity: transitive_closure, transitive_reduction
