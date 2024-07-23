@@ -78,13 +78,13 @@ end
 indegree(G::Graph, v::Int) = inneighbors(G, v) |> length
 outdegree(G::Graph, v::Int) = outneighbors(G, v) |> length
 
-#function vertices_of_newton_polytope(G::Graph{Directed})
-#    n = n_vertices(G)
-#
-#    return map(1:n) do v
-#        [point_vector([i==u for i in 1:n]) for u in [v,outneighbors(G, v)...]]
-#    end
-#end
+function vertices_of_newton_polytope(G::Graph{Directed})
+    n = n_vertices(G)
+
+    return map(1:n) do v
+        [point_vector([i==u for i in 1:n]) for u in [v,outneighbors(G, v)...]]
+    end
+end
 #
 #function cayley_embedding_of_dual_vertices(G::Graph{Directed})
 #    C = vertices_of_newton_polytope(G)

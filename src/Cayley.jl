@@ -87,7 +87,7 @@ function minkowski_projection(::Type{IncidenceMatrix}, S::SubdivisionOfPoints, n
 end
 
 @doc raw"""
-    minkowski_projection(IncidenceMatrix, S::SubdivisionOfPoints, n::Int)
+    minkowski_projection(S::SubdivisionOfPoints, n::Int) -> SubdivisionOfPoints
 
 For a subdivision `S` of the Cayley embedding of `n` point sets, 
 calculates the corresponding mixed subdivision of the Minkowski sum of the point sets.
@@ -361,13 +361,13 @@ function secondary_fan(V::MatElem)
     return sF
 end
 
-function interior_points_of_cones(P::PolyhedralFan)
-  if lineality_dim(P) > 0
-      return maximal_cones(P) .|> rays_modulo_lineality .|> first .|> sum
-  else
-      return maximal_cones(P) .|> rays .|> sum
-  end
-end
+#function interior_points_of_cones(P::PolyhedralFan)
+#  if lineality_dim(P) > 0
+#      return maximal_cones(P) .|> rays_modulo_lineality .|> first .|> sum
+#  else
+#      return maximal_cones(P) .|> rays .|> sum
+#  end
+#end
 
 function height_to_weight(G::Graph{Directed}, h::AbstractVector{T}) where {T}
   w = T[]

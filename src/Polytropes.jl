@@ -7,10 +7,13 @@ include("ToricIdeal.jl")
 include("weighted_digraph_polyhedron.jl")
 include("groebner_fan.jl")
 
+include("Cayley.jl")
+
 include("Transitivity.jl")
 import .Transitivity: transitive_closure, transitive_reduction
 export transitive_closure
 export transitive_reduction
+export transitively_closed_acyclic_graphs
 
 export complete_dag
 export opposite_graph
