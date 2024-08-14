@@ -45,7 +45,7 @@ function count_combinatorial_types(n)
     if is_trivial(Aut)
       length(int_rays)
     else
-      map(S) do s
+      map(Aut) do s
         map(int_rays) do v
           map(maximal_cones(F)) do C
             v[action_on_edge_weights(G,s)] in C
