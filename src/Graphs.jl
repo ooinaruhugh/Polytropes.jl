@@ -90,3 +90,26 @@ end
 #    C = vertices_of_newton_polytope(G)
 #    return cayley_embedding(C...)
 #end
+
+function root_polytope(G::Graph)
+  return map(edges(G)) do e
+    [(src(e) .== 1:n_vertices(G))..., (dst(e) .==  1:n_vertices(G))...]
+  end |> convex_hull
+end
+
+function fundamental_polytope(G::Graph)
+  V = map(edges(G)) do e 
+    (dst(e) .== 1:n_vertices(G)) - (src(e) .== 1:n_vertices(G))
+  end
+
+  V = [zeros(Int, n_vertices(G)), V...]
+  V = vcat.(Ref(1), V)
+  return Polymake.polytope.Polytope(POINTS=reduce(hcat, V) |> transpose)
+end
+
+#function fundamental_polytope(G::Graph)
+#  V = map(edges(G)) do e 
+#    (src(e) .== 1:n_vertices(G)) - (dst(e) .== 1:n_vertices(G))
+#  end
+#  return [zeros(Int, n_vertices(G)), V...] |> convex_hull
+#end
