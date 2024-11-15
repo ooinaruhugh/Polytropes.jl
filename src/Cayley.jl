@@ -353,10 +353,8 @@ function secondary_fan(V::AbstractVector{<:PointVector})
 end
 
 function secondary_fan(V::MatElem)
-    Polymake.Shell.tmp = convert(Polymake.PolymakeType, V)
-    Polymake.shell_execute(raw"""$tmp = new polytope::PointConfiguration(POINTS=>$tmp);""")
-    sF = Polymake.Shell.tmp |> Polymake.fan.secondary_fan |> polyhedral_fan
-    Polymake.shell_execute(raw"""undef($tmp);""")
+    V = Polymake.polytope.PointConfiguration(POINTS=V)
+    sF = V |> Polymake.fan.secondary_fan |> polyhedral_fan
 
     return sF
 end
