@@ -55,3 +55,15 @@ function weighted_digraph_polyhedron(
 
     return polyhedron(A, collect(w) |> vec)
 end
+
+function tropical_ball(
+    center::Union{AbstractMatrix{T},AbstractVector{T}}, 
+    radius::T; 
+    modulo_lineality=true
+) where {T<:Real}
+    G = complete_directed_graph(length(center))
+    A = fundamental_polytope(Matrix, G, T)[1:end-1, :]
+    b = radius .+ A * center
+
+    return weighted_digraph_polyhedron(G, b; modulo_lineality=modulo_lineality)
+end
