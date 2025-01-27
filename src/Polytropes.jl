@@ -16,13 +16,18 @@ export transitive_reduction
 export transitively_closed_acyclic_graphs
 
 export complete_dag
+export complete_directed_graph
+
+export root_polytope
+export fundamental_polytope
+
 export opposite_graph
 export indegree
 export outdegree
 
-export edge_ring
+# export edge_ring
 #export edge_ring_inclusion
-export all_pairs_shortest_path_ideal
+# export all_pairs_shortest_path_ideal
 
 export weighted_digraph_polyhedron
 
