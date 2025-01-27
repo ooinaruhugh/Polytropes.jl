@@ -4,7 +4,7 @@ import Oscar
 
 include("Graphs.jl")
 include("ToricIdeal.jl")
-include("weighted_digraph_polyhedron.jl")
+include("Polyhedra.jl")
 include("groebner_fan.jl")
 
 include("Cayley.jl")
