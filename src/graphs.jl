@@ -73,21 +73,21 @@ end
 indegree(G::Graph, v::Int) = inneighbors(G, v) |> length
 outdegree(G::Graph, v::Int) = outneighbors(G, v) |> length
 
-function root_polytope(::Type{Matrix},G::Graph)
+function root_polytope(::Type{Matrix}, G::Graph, R=ZZ)
     n = n_vertices(G)
     s = edges(G) .|> src
     t = edges(G) .|> dst
     
-    return hcat(I[[s...,1:n...],1:n], I[[t...,1:n...],1:n])
+    return R.(hcat(I[[s...,1:n...],1:n], I[[t...,1:n...],1:n]))
 end
-root_polytope(G::Graph) = root_polytope(Matrix, G) |> convex_hull
+root_polytope(G::Graph, R=ZZ) = root_polytope(Matrix, G, R) |> convex_hull
 
-function fundamental_polytope(Matrix, G::Graph)
-    A = root_polytope(Matrix, G)
+function fundamental_polytope(::Type{Matrix}, G::Graph, R=ZZ)
+    A = root_polytope(Matrix, G, R)
     
     n = n_vertices(G)
     m = n_edges(G)
     
     return A[1:m+1,n+1:end] - A[1:m+1,1:n]
 end
-fundamental_polytope(G::Graph) = fundamental_polytope(Matrix, G) |> convex_hull
+fundamental_polytope(G::Graph, R=ZZ) = fundamental_polytope(Matrix, G, R) |> convex_hull
