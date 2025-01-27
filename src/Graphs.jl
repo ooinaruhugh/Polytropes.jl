@@ -1,4 +1,5 @@
 using Oscar
+using LinearAlgebra
 import Oscar: Graph, Undirected, Directed
 
 @doc raw"""
@@ -26,15 +27,9 @@ function complete_dag(n)
 end
 
 function complete_directed_graph(n)
-    G = Graph{Directed}(n);
+    A = ones(Bool, n, n) - I(n)
 
-    for j in 1:n
-        for i in 1:n
-            i != j && add_edge!(G, j, i)
-        end
-    end
-
-    return G
+    return graph_from_adjacency_matrix(Directed, A)
 end
 
 @doc raw"""
@@ -78,38 +73,21 @@ end
 indegree(G::Graph, v::Int) = inneighbors(G, v) |> length
 outdegree(G::Graph, v::Int) = outneighbors(G, v) |> length
 
-function vertices_of_newton_polytope(G::Graph{Directed})
+function root_polytope(::Type{Matrix},G::Graph)
     n = n_vertices(G)
-
-    return map(1:n) do v
-        [point_vector([i==u for i in 1:n]) for u in [v,outneighbors(G, v)...]]
-    end
+    s = edges(G) .|> src
+    t = edges(G) .|> dst
+    
+    return hcat(I[[s...,1:n...],1:n], I[[t...,1:n...],1:n])
 end
-#
-#function cayley_embedding_of_dual_vertices(G::Graph{Directed})
-#    C = vertices_of_newton_polytope(G)
-#    return cayley_embedding(C...)
-#end
+root_polytope(G::Graph) = root_polytope(Matrix, G) |> convex_hull
 
-function root_polytope(G::Graph)
-  return map(edges(G)) do e
-    [(src(e) .== 1:n_vertices(G))..., (dst(e) .==  1:n_vertices(G))...]
-  end |> convex_hull
+function fundamental_polytope(Matrix, G::Graph)
+    A = root_polytope(Matrix, G)
+    
+    n = n_vertices(G)
+    m = n_edges(G)
+    
+    return A[1:m+1,n+1:end] - A[1:m+1,1:n]
 end
-
-function fundamental_polytope(G::Graph)
-  V = map(edges(G)) do e 
-    (dst(e) .== 1:n_vertices(G)) - (src(e) .== 1:n_vertices(G))
-  end
-
-  V = [zeros(Int, n_vertices(G)), V...]
-  V = vcat.(Ref(1), V)
-  return Polymake.polytope.Polytope(POINTS=reduce(hcat, V) |> transpose)
-end
-
-#function fundamental_polytope(G::Graph)
-#  V = map(edges(G)) do e 
-#    (src(e) .== 1:n_vertices(G)) - (dst(e) .== 1:n_vertices(G))
-#  end
-#  return [zeros(Int, n_vertices(G)), V...] |> convex_hull
-#end
+fundamental_polytope(G::Graph) = fundamental_polytope(Matrix, G) |> convex_hull
