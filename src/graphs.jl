@@ -27,7 +27,9 @@ function complete_dag(n)
 end
 
 function complete_directed_graph(n)
-    return graph_from_adjacency_matrix(Directed, ones(Bool, n, n) - I(n))
+    A = ones(Bool, n, n) - I(n)
+
+    return graph_from_adjacency_matrix(Directed, A)
 end
 
 @doc raw"""
@@ -51,35 +53,41 @@ function indices(G::Graph{Directed})
     return Dict(zip(E, 1:length(E)))
 end
 
+function variable_labels(G::Graph{Directed})
+    E = edges(G)
+    return map(e->"e$(src(e))$(dst(e))", E)
+end
+
+#function edges_by_target(G::Graph{Directed})
+#    return sort(edges(G) |> collect; by=x->x.target)
+#end
+
+function edge_of_gen(G::Graph{Directed}, x::QQMPolyRingElem)
+    return edges(G)[findfirst(y->y==x, edge_ring(G) |> gens)]
+end
+
 function opposite_graph(K::Graph{Directed})
     return graph_from_edges(Directed, [[dst(e), src(e)] for e in edges(K)], n_vertices(K))
 end
 
-function essential_edges(G::Graph{Directed})
-    Gt = transitive_reduction(G)
-
-    return GC.@preserve Gt (Gt |> edges |> collect)
-end
-
-
 indegree(G::Graph, v::Int) = inneighbors(G, v) |> length
 outdegree(G::Graph, v::Int) = outneighbors(G, v) |> length
 
-function root_polytope(::Type{Matrix}, G::Graph, R=ZZ)
+function root_polytope(::Type{Matrix},G::Graph)
     n = n_vertices(G)
     s = edges(G) .|> src
     t = edges(G) .|> dst
     
-    return R.(hcat(I[[s...,1:n...],1:n], I[[t...,1:n...],1:n]))
+    return hcat(I[[s...,1:n...],1:n], I[[t...,1:n...],1:n])
 end
-root_polytope(G::Graph, R=ZZ) = root_polytope(Matrix, G, R) |> convex_hull
+root_polytope(G::Graph) = root_polytope(Matrix, G) |> convex_hull
 
-function fundamental_polytope(::Type{Matrix}, G::Graph, R=ZZ)
-    A = root_polytope(Matrix, G, R)
+function fundamental_polytope(Matrix, G::Graph)
+    A = root_polytope(Matrix, G)
     
     n = n_vertices(G)
     m = n_edges(G)
     
     return A[1:m+1,n+1:end] - A[1:m+1,1:n]
 end
-fundamental_polytope(G::Graph, R=ZZ) = fundamental_polytope(Matrix, G, R) |> convex_hull
+fundamental_polytope(G::Graph) = fundamental_polytope(Matrix, G) |> convex_hull
