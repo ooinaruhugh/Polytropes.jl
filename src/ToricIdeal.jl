@@ -2,6 +2,15 @@ using Oscar
 import Base: Vector
 import Oscar: toric_ideal, Graph, Undirected, Directed
 
+function variable_labels(G::Graph{Directed})
+  E = edges(G)
+  return map(e->"e$(src(e))$(dst(e))", E)
+end
+
+function edge_of_gen(G::Graph{Directed}, x::QQMPolyRingElem)
+  return edges(G)[findfirst(y->y==x, edge_ring(G) |> gens)]
+end
+
 @doc raw"""
     edge_ring((G::Graph{Directed})
 
