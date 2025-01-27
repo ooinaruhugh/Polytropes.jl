@@ -27,9 +27,7 @@ function complete_dag(n)
 end
 
 function complete_directed_graph(n)
-    A = ones(Bool, n, n) - I(n)
-
-    return graph_from_adjacency_matrix(Directed, A)
+    return graph_from_adjacency_matrix(Directed, ones(Bool, n, n) - I(n))
 end
 
 @doc raw"""
@@ -53,22 +51,16 @@ function indices(G::Graph{Directed})
     return Dict(zip(E, 1:length(E)))
 end
 
-function variable_labels(G::Graph{Directed})
-    E = edges(G)
-    return map(e->"e$(src(e))$(dst(e))", E)
-end
-
-#function edges_by_target(G::Graph{Directed})
-#    return sort(edges(G) |> collect; by=x->x.target)
-#end
-
-function edge_of_gen(G::Graph{Directed}, x::QQMPolyRingElem)
-    return edges(G)[findfirst(y->y==x, edge_ring(G) |> gens)]
-end
-
 function opposite_graph(K::Graph{Directed})
     return graph_from_edges(Directed, [[dst(e), src(e)] for e in edges(K)], n_vertices(K))
 end
+
+function essential_edges(G::Graph{Directed})
+    Gt = transitive_reduction(G)
+
+    return GC.@preserve Gt (Gt |> edges |> collect)
+end
+
 
 indegree(G::Graph, v::Int) = inneighbors(G, v) |> length
 outdegree(G::Graph, v::Int) = outneighbors(G, v) |> length
