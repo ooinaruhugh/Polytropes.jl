@@ -20,7 +20,7 @@ GG = unique(last, map(PE |> filter(!isempty) |> ProgressBar) do E
    G, Polymake.graph.canonical_hash(G)
  end |> ProgressBar) .|> first
 
-P = ProgressBar(Polytropes.fundamental_polytope.(GG)) .|> Polymake.polytope.project_full
+P = ProgressBar(Polytropes.fundamental_polytope.(GG)) .|> Oscar.pm_object .|> Polymake.polytope.project_full
 #A = map(P) do p
 A = map(ProgressBar(P)) do p
   V = p.VERTICES
