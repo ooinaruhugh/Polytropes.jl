@@ -1,5 +1,6 @@
 using Oscar
-import Oscar: minkowski_sum
+import Oscar: minkowski_sum, PointVector
+import Polymake: Directed, IncidenceMatrix
 
 @doc raw"""
     minkowski_sum(A::AbstractVector{<:PointVector})
@@ -33,7 +34,7 @@ function minkowski_labels(
         M=nothing,
         combined_indices=nothing
     )
-    if M == nothing
+    if M === nothing
         M = minkowski_sum(A...)
     end
     flatA = vcat(A...)
@@ -41,7 +42,7 @@ function minkowski_labels(
     #combined_indices = reduce(vcat, map(splat(fill), length.(A)|>enumerate))
     # combined_indices replaces every point in each A[i] with the index
     # this point would have if all A[i] were concatenated.
-    if combined_indices == nothing
+    if combined_indices === nothing
         combined_indices = points_to_total_indices(A...)
     end
 
@@ -93,7 +94,7 @@ For a subdivision `S` of the Cayley embedding of `n` point sets,
 calculates the corresponding mixed subdivision of the Minkowski sum of the point sets.
 """
 function minkowski_projection(S::SubdivisionOfPoints, n::Int; M=nothing)
-    if M == nothing
+    if M === nothing
         C = points(S)
         A_with_j = map(C) do x 
             x[1:end-n], findfirst(==(1), x[end+1-n:end])
@@ -132,11 +133,11 @@ function minkowski_projection(
     to_point_set = last.(A_with_j)
     A = map.(Ref(first), filter(x->last(x)==j, A_with_j) for j in 1:n)
 
-    if M == nothing
+    if M === nothing
         M = minkowski_sum(A...)
     end
 
-    if labels == nothing
+    if labels === nothing
         labels = minkowski_labels(A...; M=M)
     end
 
