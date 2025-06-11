@@ -1,6 +1,6 @@
+authors = ["Kamillo Ferry <kafe@kafe.dev>"]
 name = "Polytropes"
 uuid = "bbcd0084-d8f5-438f-9872-cc447aef9e5f"
-authors = ["Kamillo Ferry <kafe@kafe.dev>"]
 version = "0.2.0"
 
 [deps]
@@ -12,3 +12,6 @@ LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Oscar = "f1435218-dba5-11e9-1e4d-f1a5fab5fc13"
 Polymake = "d720cf60-89b5-51f5-aff5-213f193123e7"
 Transducers = "28d57a85-8fef-5791-bfe6-a80928e7c999"
+
+[extras]
+AbstractAlgebra = "c3fe647b-3220-5bb0-a1ea-a7954cac585d"

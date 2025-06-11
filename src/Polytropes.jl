@@ -2,12 +2,12 @@ module Polytropes
 
 import Oscar
 
-include("Graphs.jl")
+include("graphs.jl")
 include("ToricIdeal.jl")
-include("Polyhedra.jl")
+include("polyhedra.jl")
 include("groebner_fan.jl")
 
-include("Cayley.jl")
+include("cayley-trick.jl")
 
 include("Transitivity.jl")
 import .Transitivity: transitive_closure, transitive_reduction
