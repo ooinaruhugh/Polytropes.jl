@@ -19,7 +19,8 @@ function weighted_digraph_polyhedron(
         w::Union{AbstractMatrix{T},MatElem{T},AbstractVector{T}};
         modulo_lineality=true
 ) where {T<:RingElem}
-    R = base_ring(w)
+    #R = base_ring(w)
+    R = parent(first(w))
     A = if modulo_lineality
         fundamental_polytope(Matrix, G, R)[1:end-1, 2:end]
     else 
