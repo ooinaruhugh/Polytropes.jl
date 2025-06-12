@@ -11,6 +11,10 @@ else
   n = parse(Int,ARGS[1])
 end
 
+if !isdir("tmp/$n")
+  mkpath("tmp/$n")
+end
+
 G = complete_dag(n)
 E = edges(G) |> collect
 PE = powerset(E) |> collect

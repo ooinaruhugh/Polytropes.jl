@@ -4,8 +4,14 @@ This repository contains a Julia module for computations on *polytropes* using O
 
 
 ## Enumerating combinatorial types of polytropes
-First, generate the point configurations corresponding to each DAG on n nodes. 
-Run the following command from the top-level of the source tree to generate the files for $n=4$.
+This can be done by calling the following script from the top-level directory of this repo:
+```sh
+examples/enumerate-with-mptopcom.sh <n>
+```
+
+This generates the necessary point configurations corresponding to each DAG on $n$ nodes, and then feeds them to `mptopcom`.
+
+One can also generate the point configurations separately by calling the following command.
 ```sh
 julia --project examples/with-mptopcom.jl 4
 ```
