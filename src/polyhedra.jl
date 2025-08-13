@@ -68,3 +68,42 @@ function tropical_ball(
 
     return weighted_digraph_polyhedron(G, b; modulo_lineality=modulo_lineality)
 end
+
+
+function root_polytope(::Type{Matrix}, G::Graph, R=ZZ)
+    n = n_vertices(G)
+    s = edges(G) .|> src
+    t = edges(G) .|> dst
+    
+    return R.(hcat(I[[s...,1:n...],1:n], I[[t...,1:n...],1:n]))
+end
+root_polytope(G::Graph, R=ZZ) = root_polytope(Matrix, G, R) |> convex_hull
+
+function fundamental_polytope(::Type{Matrix}, G::Graph, R=ZZ)
+    A = root_polytope(Matrix, G, R)
+    
+    n = n_vertices(G)
+    m = n_edges(G)
+    
+    return (A[1:m+1,n+1:end] - A[1:m+1,1:n])[[end, 1:m...],:]
+end
+fundamental_polytope(G::Graph, R=ZZ) = fundamental_polytope(Matrix, G, R) |> convex_hull
+
+function subdivision_of_fundamental_polytope(
+    G::Graph{Directed}, w::AbstractVector{T}; project=true, acyclic=true
+) where {T}
+  A = fundamental_polytope(Matrix, G)
+
+  if project
+    S = subdivision_of_points(A[:, 2:end], [w...,0])
+    if acyclic
+      I = reduce(vcat,Oscar.pm_object(S).POLYHEDRAL_COMPLEX.MAXIMAL_POLYTOPES_INCIDENCES)
+      subI = I[filter(x -> !I[x,end], 1:n_rows(I)), 1:end-1]
+      return subdivision_of_points(A[1:end-1,2:end-1], subI)
+    else
+      return S
+    end
+  else
+    return subdivision_of_points(A,[w...,0])
+  end
+end
