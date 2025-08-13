@@ -65,3 +65,43 @@ end
 indegree(G::Graph, v::Int) = inneighbors(G, v) |> length
 outdegree(G::Graph, v::Int) = outneighbors(G, v) |> length
 
+
+function transitively_closed_acyclic_graphs(n::Int)
+    output = Graph{Directed}[]
+    seen = Set{Int}()
+    queue = Graph{Directed}[complete_dag(n)]
+    while !is_empty(queue)
+        G = popfirst!(queue)
+        push!(output, G)
+        E = transitive_reduction(G) |> edges |> collect
+        for e in E
+            rem_edge!(G, src(e), dst(e))
+            graph_hash = Polymake.graph.canonical_hash(Oscar.pm_object(G))
+            if graph_hash ∉ seen
+              if edges(G) |> !is_empty
+                H = graph_from_edges(Directed, edges(G), n)
+                push!(queue, H)
+              end
+            end
+            push!(seen, graph_hash)
+            add_edge!(G, src(e), dst(e))
+        end
+    end
+    push!(output, Graph{Directed}(n))
+    return output
+end
+
+function vertex_to_edge_action(G::Graph, σ::PermGroupElem)
+  if n_vertices(G) != degree(σ)
+    throw("Permutation is not applicable to the graph")
+  end
+
+  E = edges(G) |> collect
+  targets = map(E) do e
+    σe = Edge(σ(src(e)), σ(dst(e)))
+    findfirst(==(σe), E)
+  end
+
+  return perm(symmetric_group(n_edges(G)), targets)
+end
+
