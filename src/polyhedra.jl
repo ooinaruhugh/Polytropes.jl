@@ -107,3 +107,9 @@ function subdivision_of_fundamental_polytope(
     return subdivision_of_points(A,[w...,0])
   end
 end
+
+function secondary_fan(A)
+  #P = Polymake.polytope.PointConfiguration(POINTS=homogenize(A))
+  P = Polymake.polytope.PointConfiguration(POINTS=A)
+  return Polymake.fan.secondary_fan(P) |> polyhedral_fan
+end
