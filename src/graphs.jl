@@ -80,6 +80,6 @@ function fundamental_polytope(::Type{Matrix}, G::Graph, R=ZZ)
     n = n_vertices(G)
     m = n_edges(G)
     
-    return A[1:m+1,n+1:end] - A[1:m+1,1:n]
+    return (A[1:m+1,n+1:end] - A[1:m+1,1:n])[[end, 1:m...],:]
 end
 fundamental_polytope(G::Graph, R=ZZ) = fundamental_polytope(Matrix, G, R) |> convex_hull
