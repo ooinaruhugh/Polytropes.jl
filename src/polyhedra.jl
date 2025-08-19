@@ -49,9 +49,9 @@ function weighted_digraph_polyhedron(
         modulo_lineality=true
 ) where {T<:Real}
     A = if modulo_lineality
-        fundamental_polytope(Matrix, G, T)[1:end-1, 2:end]
+        fundamental_polytope(Matrix, G, T)[2:end, 2:end]
     else 
-        fundamental_polytope(Matrix, G, T)[1:end-1, :]
+        fundamental_polytope(Matrix, G, T)[2:end, :]
     end
 
     return polyhedron(A, collect(w) |> vec)
@@ -95,11 +95,11 @@ function subdivision_of_fundamental_polytope(
   A = fundamental_polytope(Matrix, G)
 
   if project
-    S = subdivision_of_points(A[:, 2:end], [w...,0])
+    S = subdivision_of_points(A[:, 2:end], [0,w...])
     if acyclic
       I = reduce(vcat,Oscar.pm_object(S).POLYHEDRAL_COMPLEX.MAXIMAL_POLYTOPES_INCIDENCES)
       subI = I[filter(x -> !I[x,end], 1:n_rows(I)), 1:end-1]
-      return subdivision_of_points(A[1:end-1,2:end-1], subI)
+      return subdivision_of_points(A[2:end,2:end-1], subI)
     else
       return S
     end
