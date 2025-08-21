@@ -98,7 +98,7 @@ function subdivision_of_fundamental_polytope(
     S = subdivision_of_points(A[:, 2:end], [0,w...])
     if acyclic
       I = reduce(vcat,Oscar.pm_object(S).POLYHEDRAL_COMPLEX.MAXIMAL_POLYTOPES_INCIDENCES)
-      subI = I[filter(x -> !I[x,end], 1:n_rows(I)), 1:end-1]
+      subI = I[filter(x -> !I[x,1], 1:n_rows(I)), 2:end]
       return subdivision_of_points(A[2:end,2:end-1], subI)
     else
       return S
