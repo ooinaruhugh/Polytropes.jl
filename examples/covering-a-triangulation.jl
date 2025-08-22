@@ -20,7 +20,7 @@ function find_next_set(I::IncidenceMatrix, v::Int, covered::Vector{Int})
   end |> rand
 end
 
-function qd_vertex_cover(I::IncidenceMatrix; totally_randomized=false)
+function qd_set_cover(I::IncidenceMatrix)
   vc = []
   rows = [1:size(I, 1)...]
   n = size(I,2)
@@ -38,9 +38,41 @@ function qd_vertex_cover(I::IncidenceMatrix; totally_randomized=false)
   return I[unique(vc),:]
 end
 
+function random_set_cover(I::IncidenceMatrix)
+  cover = []
+  n = n_columns(I)
+  covered = [false for _ in 1:n]
+
+  while 0 in covered
+    c = map(eachrow(I)) do row
+      count(==(true), row.&&covered)
+    end
+
+    next_greedy = filter(!in(cover), findall(==(minimum(c)), c)) |> rand
+
+    push!(cover, next_greedy)
+    covered = covered .|| Vector{Bool}(I[next_greedy,:])
+  end
+
+  return I[unique(cover), :]
+end
+
+#########################################
+
 n = 4
+
 G = complete_dag(n)
-
 sop = subdivision_of_fundamental_polytope(G, [0,0,0,3,1,3])
-
 cells = maximal_cells(IncidenceMatrix, sop)
+
+#########################################
+
+triangs = load("data/complete-dags/$n.mrdi")
+sops = triangs.triangulations
+map(sops) do Δ
+  map(x->random_set_cover(Δ)|>n_rows, 1:100) |> minimum
+end |> unique
+
+#########################################
+
+map(n -> [n, floor(.5*(n^2 - n)), ceil(.5*(n^2 - n)/(n-1))], 1:10)
