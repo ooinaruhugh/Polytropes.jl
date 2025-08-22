@@ -3,9 +3,7 @@ module Polytropes
 import Oscar
 
 include("graphs.jl")
-include("ToricIdeal.jl")
 include("polyhedra.jl")
-include("groebner_fan.jl")
 
 include("cayley-trick.jl")
 
@@ -24,6 +22,8 @@ export fundamental_polytope
 export opposite_graph
 export indegree
 export outdegree
+
+export subdivision_of_fundamental_polytope
 
 # export edge_ring
 #export edge_ring_inclusion
