@@ -67,11 +67,29 @@ cells = maximal_cells(IncidenceMatrix, sop)
 
 #########################################
 
-triangs = load("data/complete-dags/$n.mrdi")
-sops = triangs.triangulations
+triangs = load("data/complete-dags/$n.mrdi");
+sops = triangs.triangulations;
 map(sops) do Δ
   map(x->random_set_cover(Δ)|>n_rows, 1:100) |> minimum
 end |> unique
+
+#########################################
+
+counts = Int[];
+files = filter(contains("mrdi"), readdir("data/complete-dags/7.out"; join=true));
+
+for f in files
+  println(stderr, "Doing $f")
+  triangs = load(f)
+  sops = triangs.triangulations
+  @time v = map(sops) do Δ
+    map(x->random_set_cover(Δ)|>n_rows, 1:30) |> minimum
+  end |> unique
+
+  push!(counts, v...)
+end
+
+unique(counts)
 
 #########################################
 
