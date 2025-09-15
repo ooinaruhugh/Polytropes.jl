@@ -2,20 +2,22 @@
 
 This repository contains a Julia module for computations on *polytropes* using OSCAR.
 
-
-## Enumerating combinatorial types of polytropes
-This can be done by calling the following script from the top-level directory of this repo:
+## Enumerating triangulations for fundamental polytopes
+This can be done by calling the following scripts from the top-level directory of this repo:
 ```sh
+julia --project examples/with-mptopcom.jl <n>
 examples/enumerate-with-mptopcom.sh <n>
 ```
 
 This generates the necessary point configurations corresponding to each DAG on $n$ nodes, and then feeds them to `mptopcom`.
 
-One can also generate the point configurations separately by calling the following command.
+## Enumerating combinatorial types of polytropes
+This is done by calculating from above triangulations the corresponding secondary cones and counting the number
+of cones (also the lower-dimensional ones) in the resulting fans.
+
+For this, generate the triangulations with `examples/with-mptopcom.jl` as above. Then call the following scripts:
 ```sh
-julia --project examples/with-mptopcom.jl 4
-```
-Then, run `mptopcom` for each file in `tmp/<n>/`. The following command automates this and calculates the total.
-```sh
-export N=4; for file in tmp/$N/*.topcom; do mptopcom1 --central < $file 2> /dev/null | wc -l; done | awk '{s+=$1} END {print s}'
+examples/generate-triangulations-mpi.sh tmp/<n>
+julia examples/parse-triangulations.batch.jl tmp/<n>
+julia examples/compute-stratum.batch.jl tmp/<n>
 ```

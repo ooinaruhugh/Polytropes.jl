@@ -1,14 +1,14 @@
 #!/bin/bash
 
-N=$1
+folder=$1
 
-count=`ls -1 data/combinatorial-types/$N/*.topcom | wc -l`
+count=`ls -1 $folder/*.topcom | wc -l`
 
 echo
 
-for f in data/combinatorial-types/$N/*.topcom; do
+for f in $folder/*.topcom; do
   mpirun -np $(nproc) mptopcom --central --regular <$f 2>/dev/null \
-    | pv -cl --name $(basename $f) | xz > data/combinatorial-types/$N/$(basename $f .topcom).out.xz
+    | pv -cl --name $(basename $f) | xz > $folder/$(basename $f .topcom).out.xz
   printf "{$f}\n" 
 done | pv -cl --size $count --name Total > /dev/null
 
