@@ -24,21 +24,8 @@
 ###############################################################################
 using JSON
 using Oscar
-using CodecXz
-using ProgressBars
 
-@assert length(ARGS) == 1 "Usage: parse-triangulations.batch.jl folder"
-
-folder, = ARGS
-files = readdir(folder; join=true) |> filter(contains(r"\d.topcom"))
+@assert length(ARGS) == 3 "Usage: parse-triangulations.jl DAT_FILE XZ_FILE OUT_FILE"
 
 include("parse-triangulations.jl")
-
-for dat_file in ProgressBar(files)
-  name    = rsplit(dat_file, "."; limit=2)[1]
-  xz_file = name * ".out.xz"
-  outfile = name * ".mrdi.xz"
-
-  parse_triangulation_to_mrdi(dat_file, xz_file, outfile)
-end
-
+parse_triangulation_to_mrdi(ARGS...)
