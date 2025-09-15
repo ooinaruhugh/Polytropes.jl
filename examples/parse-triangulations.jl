@@ -21,7 +21,7 @@ function parse_triangulation_to_mrdi(dat_file::String, xz_file::String, outfile:
   end
 
   triangs = IncidenceMatrix[]
-  global i = 1
+  global i = 0
   open(`xzcat $xz_file`, "r") do io
       while !eof(io)
           line = readline(io)
@@ -36,6 +36,9 @@ function parse_triangulation_to_mrdi(dat_file::String, xz_file::String, outfile:
   end
   println("Found $(i-1) triangulations in $xz_file")
   tuple = (points=points, group=group, triangulations=triangs)
+  if isempty(triangs)
+    return
+  end
   open(XzCompressorStream,outfile,"w+") do out
     save(out, tuple)
   end
