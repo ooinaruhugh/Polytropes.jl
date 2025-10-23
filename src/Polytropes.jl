@@ -4,7 +4,7 @@ import Oscar
 
 include("graphs.jl")
 include("polyhedra.jl")
-
+include("toric-ideals.jl")
 include("cayley-trick.jl")
 
 include("Transitivity.jl")
@@ -25,7 +25,7 @@ export outdegree
 
 export subdivision_of_fundamental_polytope
 
-# export edge_ring
+export edge_ring
 #export edge_ring_inclusion
 # export all_pairs_shortest_path_ideal
 

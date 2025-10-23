@@ -61,6 +61,15 @@ function essential_edges(G::Graph{Directed})
     return GC.@preserve Gt (Gt |> edges |> collect)
 end
 
+weight_matrix_to_vector(G::Graph{Directed},C) = map(e -> C[dst(e),src(e)], edges(G))
+function weight_vector_to_matrix(G::Graph{Directed},w)
+  length(w) != n_edges(G) && error("Weight vector does not correspond to edges of graph")
+  C = identity_matrix(QQ,n_vertices(G))
+  for (c,e) in zip(w,edges(G))
+    C[dst(e),src(e)] = c
+  end
+  return C
+end
 
 indegree(G::Graph, v::Int) = inneighbors(G, v) |> length
 outdegree(G::Graph, v::Int) = outneighbors(G, v) |> length
