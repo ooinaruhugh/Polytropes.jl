@@ -69,7 +69,7 @@ function tropical_ball(
     return weighted_digraph_polyhedron(G, b; modulo_lineality=modulo_lineality)
 end
 
-
+root_polytope(::Type{MatElem}, G::Graph, R=ZZ) = matrix(R,root_polytope(Matrix,G,R))
 function root_polytope(::Type{Matrix}, G::Graph, R=ZZ)
     n = n_vertices(G)
     s = edges(G) .|> src
@@ -79,6 +79,7 @@ function root_polytope(::Type{Matrix}, G::Graph, R=ZZ)
 end
 root_polytope(G::Graph, R=ZZ) = root_polytope(Matrix, G, R) |> convex_hull
 
+fundamental_polytope(::Type{MatElem}, G::Graph, R=ZZ) = matrix(R,fundamental_polytope(Matrix,G,R))
 function fundamental_polytope(::Type{Matrix}, G::Graph, R=ZZ)
     A = root_polytope(Matrix, G, R)
     

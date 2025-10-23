@@ -62,9 +62,19 @@ function essential_edges(G::Graph{Directed})
 end
 
 weight_matrix_to_vector(G::Graph{Directed},C) = map(e -> C[dst(e),src(e)], edges(G))
-function weight_vector_to_matrix(G::Graph{Directed},w)
+weight_matrix_to_vector(R::Field,G::Graph{Directed},C) = R.(weight_matrix_to_vector(G,C))
+
+weight_vector_to_matrix(G::Graph{Directed},w) = weight_vector_to_matrix(MatElem,G,w)
+weight_vector_to_matrix(R::Field,G::Graph{Directed},w) = weight_vector_to_matrix(MatElem,R,G,w)
+
+weight_vector_to_matrix(::Type{Matrix},G::Graph{Directed},w) = Matrix(weight_vector_to_matrix(G,w))
+weight_vector_to_matrix(::Type{Matrix},R::Field,G::Graph{Directed},w) = Matrix(weight_vector_to_matrix(R,G,w))
+
+weight_vector_to_matrix(::Type{MatElem},G::Graph{Directed},w::Vector{<:Integer}) = weight_vector_to_matrix(MatElem,QQ,G,w) 
+weight_vector_to_matrix(::Type{MatElem},G::Graph{Directed},w::Vector{<:FieldElem}) = weight_vector_to_matrix(MatElem,base_ring(w),G,w)
+function weight_vector_to_matrix(::Type{MatElem},R::Field, G::Graph{Directed},w)
   length(w) != n_edges(G) && error("Weight vector does not correspond to edges of graph")
-  C = identity_matrix(QQ,n_vertices(G))
+  C = identity_matrix(R,n_vertices(G))
   for (c,e) in zip(w,edges(G))
     C[dst(e),src(e)] = c
   end
