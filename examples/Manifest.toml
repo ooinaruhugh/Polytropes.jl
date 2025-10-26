@@ -2,7 +2,7 @@
 
 julia_version = "1.10.10"
 manifest_format = "2.0"
-project_hash = "d9c17dc6ae53ca7aae5dabc2432414ab49747aa4"
+project_hash = "4ec7aeb05d1e14e0caf8424426d5a928e5be66db"
 
 [[deps.ANSIColoredPrinters]]
 git-tree-sha1 = "574baf8110975760d391c710b6341da1afa48d8c"
@@ -821,6 +821,12 @@ version = "0.13.2"
 
     [deps.Polymake.weakdeps]
     Graphviz_jll = "3c863552-8265-54e4-a6dc-903eb78fde85"
+
+[[deps.Polytropes]]
+deps = ["Combinatorics", "Distributed", "Documenter", "Graphs", "LinearAlgebra", "Oscar", "Polymake", "Transducers"]
+path = ".."
+uuid = "bbcd0084-d8f5-438f-9872-cc447aef9e5f"
+version = "0.3.0"
 
 [[deps.PrecompileTools]]
 deps = ["Preferences"]
