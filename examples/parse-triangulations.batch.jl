@@ -22,12 +22,16 @@
 #
 ###############################################################################
 ###############################################################################
+
+if length(ARGS) != 1 
+  println("Usage: parse-triangulations.batch.jl folder")
+  exit(1)
+end
+
 using JSON
 using Oscar
 using CodecXz
 using ProgressBars
-
-@assert length(ARGS) == 1 "Usage: parse-triangulations.batch.jl folder"
 
 folder, = ARGS
 files = readdir(folder; join=true) |> filter(contains(r"\d.topcom"))

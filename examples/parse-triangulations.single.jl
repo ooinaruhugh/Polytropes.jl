@@ -22,10 +22,13 @@
 #
 ###############################################################################
 ###############################################################################
+if length(ARGS) != 3  
+  println("Usage: parse-triangulations.jl DAT_FILE XZ_FILE OUT_FILE")
+  exit(1)
+end
+
 using JSON
 using Oscar
-
-@assert length(ARGS) == 3 "Usage: parse-triangulations.jl DAT_FILE XZ_FILE OUT_FILE"
 
 include("parse-triangulations.jl")
 parse_triangulation_to_mrdi(ARGS...)
